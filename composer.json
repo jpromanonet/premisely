@@ -1,0 +1,20 @@
+{
+    "name": "premisely/premisely",
+    "description": "Premisely — property operations platform",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Premisely\\": "app/"
+        },
+        "files": [
+            "app/Shared/helpers.php"
+        ]
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
