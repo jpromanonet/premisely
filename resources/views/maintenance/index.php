@@ -6,7 +6,12 @@
 /** @var bool $canEdit */
 $pid = $property['public_id'];
 ?>
-<div class="page-header"><div><h1>Mantenimiento</h1></div></div>
+<div class="page-header">
+    <div>
+        <h1>Mantenimiento</h1>
+        <p>Cuida hoy, disfrutá siempre.</p>
+    </div>
+</div>
 <?php if ($canEdit): ?>
 <section class="panel">
     <h2>Nuevo plan</h2>

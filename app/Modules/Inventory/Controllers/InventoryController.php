@@ -17,8 +17,10 @@ final class InventoryController extends Controller
     {
         $pid = PropertyContext::propertyId();
         $items = Connection::fetchAll(
-            'SELECT i.*, s.name AS space_name FROM inventory_items i
+            'SELECT i.*, s.name AS space_name, c.name AS category_name
+             FROM inventory_items i
              LEFT JOIN spaces s ON s.id = i.space_id
+             LEFT JOIN inventory_categories c ON c.id = i.category_id
              WHERE i.property_id = :p AND i.archived_at IS NULL
              ORDER BY i.name',
             ['p' => $pid]
@@ -33,6 +35,7 @@ final class InventoryController extends Controller
             'property' => PropertyContext::property(),
             'items' => $items,
             'totalValue' => $value,
+            'canEdit' => PropertyContext::canEdit(),
         ]);
     }
 

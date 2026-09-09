@@ -6,7 +6,13 @@
 /** @var bool $canEdit */
 $pid = $property['public_id'];
 ?>
-<div class="page-header"><div><h1>Stock</h1><p>Consumibles y cantidades.</p></div></div>
+<div class="page-header">
+    <div>
+        <h1>Stock y compras</h1>
+        <p>Consumibles, mínimos y alertas de reposición.</p>
+    </div>
+    <a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/shopping')) ?>">Ir a lista de compras</a>
+</div>
 
 <?php if ($canEdit): ?>
 <section class="panel">

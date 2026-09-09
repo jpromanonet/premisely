@@ -5,8 +5,11 @@
 $pid = $property['public_id'];
 ?>
 <div class="page-header">
-    <div><h1>Inventario</h1><p>Bienes y objetos de la propiedad.</p></div>
-    <?php if ($canEdit): ?><a class="btn" href="<?= e(url('/properties/' . $pid . '/inventory/create')) ?>">Nuevo ítem</a><?php endif; ?>
+    <div>
+        <h1>Inventario</h1>
+        <p>Objetos, ubicaciones y valor estimado de la propiedad.</p>
+    </div>
+    <?php if (!empty($canEdit)): ?><a class="btn" href="<?= e(url('/properties/' . $pid . '/inventory/create')) ?>">+ Nuevo objeto</a><?php endif; ?>
 </div>
 <section class="panel">
     <div class="table-wrap">
@@ -18,7 +21,7 @@ $pid = $property['public_id'];
                     <td><a href="<?= e(url('/properties/' . $pid . '/inventory/' . $item['public_id'])) ?>"><?= e($item['name']) ?></a></td>
                     <td><?= e((string) ($item['space_name'] ?? '—')) ?></td>
                     <td><?= e((string) ($item['category_name'] ?? '—')) ?></td>
-                    <td><?= e($item['status']) ?></td>
+                    <td><span class="badge badge-neutral"><?= e($item['status']) ?></span></td>
                     <td><a href="<?= e(url('/properties/' . $pid . '/inventory/' . $item['public_id'])) ?>">Ver</a></td>
                 </tr>
             <?php endforeach; ?>

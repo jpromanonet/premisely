@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" fill="none" aria-hidden="true">
+  <rect width="280" height="160" rx="18" fill="#EDE4D6"/>
+  <path d="M40 150V70c0-38 30-58 100-58s100 20 100 58v80" stroke="#2F2736" stroke-width="6" stroke-linecap="round"/>
+  <path d="M70 150V78c0-24 20-40 70-40s70 16 70 40v72" fill="#D8C3AE" stroke="#403844" stroke-width="3"/>
+  <rect x="118" y="88" width="44" height="62" rx="6" fill="#A8B7A3" opacity=".55"/>
+  <path d="M140 42l4 10 11 1-8 7 3 11-10-6-10 6 3-11-8-7 11-1 4-10z" fill="#C98F73"/>
+  <ellipse cx="168" cy="118" rx="18" ry="10" fill="#2F2736"/>
+  <circle cx="158" cy="108" r="9" fill="#2F2736"/>
+  <circle cx="154" cy="106" r="1.5" fill="#F3EBDD"/>
+  <path d="M188 70h52v34c0 6-5 10-10 10h-32c-5 0-10-4-10-10V70z" fill="#6F8572"/>
+  <text x="198" y="92" fill="#F3EBDD" font-size="7" font-family="Georgia, serif">BUENAS</text>
+  <text x="196" y="102" fill="#F3EBDD" font-size="6" font-family="Georgia, serif">RUTINAS</text>
+</svg>
