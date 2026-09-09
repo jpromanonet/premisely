@@ -134,6 +134,67 @@ final class InventoryService
         ActivityLogger::log($propertyId, 'inventory_item', $itemId, 'moved', ['space_id' => $spaceId]);
     }
 
+    public function transferProperty(int $fromPropertyId, int $itemId, int $toPropertyId, ?int $spaceId = null): void
+    {
+        Connection::query(
+            'UPDATE inventory_items SET property_id = :to_pid, space_id = :space_id, updated_at = NOW()
+             WHERE id = :id AND property_id = :from_pid AND archived_at IS NULL',
+            [
+                'to_pid' => $toPropertyId,
+                'space_id' => $spaceId,
+                'id' => $itemId,
+                'from_pid' => $fromPropertyId,
+            ]
+        );
+
+        Connection::query(
+            'INSERT INTO inventory_item_events (inventory_item_id, property_id, user_id, event_type, notes, created_at)
+             VALUES (:item_id, :property_id, :user_id, :event_type, :notes, NOW())',
+            [
+                'item_id' => $itemId,
+                'property_id' => $toPropertyId,
+                'user_id' => Auth::id(),
+                'event_type' => 'transferred',
+                'notes' => 'Trasladado desde propiedad #' . $fromPropertyId,
+            ]
+        );
+
+        ActivityLogger::log($fromPropertyId, 'inventory_item', $itemId, 'transferred_out', [
+            'to_property_id' => $toPropertyId,
+        ]);
+        ActivityLogger::log($toPropertyId, 'inventory_item', $itemId, 'transferred_in', [
+            'from_property_id' => $fromPropertyId,
+        ]);
+    }
+
+    public function dispose(int $propertyId, int $itemId, string $disposition): void
+    {
+        $statusMap = [
+            'sell' => 'vendido',
+            'donate' => 'donado',
+            'discard' => 'descartado',
+            'leave' => 'dejado',
+        ];
+        $status = $statusMap[$disposition] ?? 'archivado';
+        Connection::query(
+            'UPDATE inventory_items SET archived_at = NOW(), status = :status, updated_at = NOW()
+             WHERE id = :id AND property_id = :property_id AND archived_at IS NULL',
+            ['status' => $status, 'id' => $itemId, 'property_id' => $propertyId]
+        );
+        Connection::query(
+            'INSERT INTO inventory_item_events (inventory_item_id, property_id, user_id, event_type, notes, created_at)
+             VALUES (:item_id, :property_id, :user_id, :event_type, :notes, NOW())',
+            [
+                'item_id' => $itemId,
+                'property_id' => $propertyId,
+                'user_id' => Auth::id(),
+                'event_type' => 'disposed',
+                'notes' => 'Disposición: ' . $disposition,
+            ]
+        );
+        ActivityLogger::log($propertyId, 'inventory_item', $itemId, 'disposed', ['disposition' => $disposition]);
+    }
+
     public function archive(int $propertyId, int $itemId): void
     {
         Connection::query(

@@ -195,7 +195,7 @@ final class StockService
     }
 
     /** @param array<string, mixed> $item */
-    private function ensureOnShoppingList(int $propertyId, array $item, float $currentQty): void
+    public function ensureOnShoppingList(int $propertyId, array $item, float $currentQty): void
     {
         $list = Connection::fetch(
             'SELECT * FROM shopping_lists

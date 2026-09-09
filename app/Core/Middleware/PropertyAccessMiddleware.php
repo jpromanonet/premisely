@@ -17,10 +17,18 @@ final class PropertyAccessMiddleware
     /** @param array<string, string> $params */
     public function handle(Request $request, array $params, callable $next): mixed
     {
-        Auth::requireLogin();
+        if (!Auth::check()) {
+            if ($request->wantsJson()) {
+                \Premisely\Core\Http\Response::json(['error' => 'Unauthenticated'], 401)->send();
+            }
+            Auth::requireLogin();
+        }
 
         $key = $params['property'] ?? null;
         if ($key === null || $key === '') {
+            if ($request->wantsJson()) {
+                \Premisely\Core\Http\Response::json(['error' => 'Property required'], 400)->send();
+            }
             flash('error', 'Propiedad no especificada.');
             redirect('/dashboard');
         }
@@ -41,6 +49,9 @@ final class PropertyAccessMiddleware
         );
 
         if (!$property) {
+            if ($request->wantsJson()) {
+                \Premisely\Core\Http\Response::json(['error' => 'Forbidden'], 403)->send();
+            }
             flash('error', 'No tenés acceso a esa propiedad.');
             redirect('/dashboard');
         }

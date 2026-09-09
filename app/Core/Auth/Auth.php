@@ -102,6 +102,21 @@ final class Auth
         }
     }
 
+    /** Set authenticated user without regenerating the session (API tokens). */
+    public static function setUser(array $user): void
+    {
+        $_SESSION['user'] = [
+            'id' => (int) $user['id'],
+            'public_id' => (string) $user['public_id'],
+            'name' => (string) $user['name'],
+            'email' => (string) $user['email'],
+            'locale' => (string) ($user['locale'] ?? 'es'),
+            'timezone' => (string) ($user['timezone'] ?? 'UTC'),
+            'preferred_currency' => (string) ($user['preferred_currency'] ?? 'ARS'),
+        ];
+        $_SESSION['_last_activity'] = time();
+    }
+
     public static function loginThrottled(): bool
     {
         $key = self::throttleKey();

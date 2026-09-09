@@ -89,6 +89,7 @@ final class PropertyController extends Controller
             'stats' => $stats,
             'activity' => ActivityLogger::forProperty($pid, 15),
             'canEdit' => PropertyContext::canEdit(),
+            'canManage' => PropertyContext::canManage(),
         ]);
     }
 
@@ -153,6 +154,25 @@ final class PropertyController extends Controller
         Connection::query('UPDATE properties SET archived_at = NOW(), status = \'archivada\' WHERE id = :id', ['id' => $property['id']]);
         ActivityLogger::log((int) $property['id'], 'property', (int) $property['id'], 'archived');
         flash('success', 'Propiedad archivada.');
+        $this->redirect('/properties');
+    }
+
+    public function destroy(Request $request, array $params): never
+    {
+        $property = PropertyContext::property();
+        if (!PropertyContext::canManage()) {
+            flash('error', 'No tenés permiso para eliminar esta propiedad.');
+            $this->redirect('/properties/' . $property['public_id']);
+        }
+
+        $confirm = trim((string) $request->input('confirm_name', ''));
+        if ($confirm === '' || strcasecmp($confirm, (string) $property['name']) !== 0) {
+            flash('error', 'Para eliminar, escribí exactamente el nombre de la propiedad.');
+            $this->redirect('/properties/' . $property['public_id'] . '/edit');
+        }
+
+        (new PropertyService())->delete($property);
+        flash('success', 'Propiedad eliminada permanentemente.');
         $this->redirect('/properties');
     }
 }

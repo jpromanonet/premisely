@@ -40,7 +40,20 @@ $action = $isEdit ? url('/properties/' . $p['public_id']) : url('/properties');
 <?php if ($isEdit): ?>
 <form method="post" action="<?= e(url('/properties/' . $p['public_id'] . '/archive')) ?>" onsubmit="return confirm('¿Archivar propiedad?');" style="margin-top:1rem">
   <?= csrf_field() ?>
-  <button class="btn btn--danger" type="submit">Archivar</button>
+  <button class="btn btn--ghost" type="submit">Archivar</button>
 </form>
 <?php endif; ?>
 </section>
+<?php if ($isEdit): ?>
+<section id="eliminar" class="panel" style="margin-top:1.5rem;border-color:var(--danger-fg)">
+  <h2>Eliminar permanentemente</h2>
+  <p class="muted">Esto borra la propiedad y todos sus datos (espacios, inventario, stock, tareas, documentos, etc.). No se puede deshacer.</p>
+  <form method="post" action="<?= e(url('/properties/' . $p['public_id'] . '/delete')) ?>" class="stack" onsubmit="return confirm('¿Eliminar esta propiedad para siempre?');">
+    <?= csrf_field() ?>
+    <label>Escribí el nombre exacto para confirmar
+      <input name="confirm_name" placeholder="<?= e($p['name'] ?? '') ?>" required autocomplete="off">
+    </label>
+    <button class="btn btn--danger" type="submit">Eliminar propiedad</button>
+  </form>
+</section>
+<?php endif; ?>

@@ -11,10 +11,11 @@ require dirname(__DIR__) . '/bootstrap/app.php';
 
 use Premisely\Core\Database\Connection;
 use Premisely\Core\Logging\Logger;
+use Premisely\Modules\Automations\Services\AutomationRunner;
+use Premisely\Modules\Notifications\Services\NotificationService;
 
 Logger::info('cron.scheduler.start');
 
-// Process small job batches
 $jobs = Connection::fetchAll(
     "SELECT * FROM jobs
      WHERE status = 'pending' AND available_at <= NOW()
@@ -28,7 +29,19 @@ foreach ($jobs as $job) {
         ['id' => $job['id']]
     );
     try {
-        // Placeholder processors — emails/notifications expand later
+        $type = (string) $job['type'];
+        $payload = json_decode((string) ($job['payload'] ?? '{}'), true) ?: [];
+        if ($type === 'notify_property' && isset($payload['property_id'], $payload['title'])) {
+            NotificationService::notifyProperty(
+                (int) $payload['property_id'],
+                (string) ($payload['notify_type'] ?? 'job'),
+                (string) $payload['title'],
+                $payload['body'] ?? null,
+                $payload['link'] ?? null
+            );
+        } elseif ($type === 'run_automations') {
+            (new AutomationRunner())->runAll();
+        }
         Connection::query(
             "UPDATE jobs SET status = 'completed', completed_at = NOW() WHERE id = :id",
             ['id' => $job['id']]
@@ -42,7 +55,8 @@ foreach ($jobs as $job) {
     }
 }
 
-// Mark overdue routines as needing attention via activity (lightweight)
+$autoActions = (new AutomationRunner())->runAll();
+
 $overdue = Connection::fetchAll(
     "SELECT id, property_id, title FROM routines
      WHERE is_active = 1 AND archived_at IS NULL AND next_due_at IS NOT NULL AND next_due_at < NOW()
@@ -56,5 +70,9 @@ foreach ($overdue as $routine) {
     ]);
 }
 
-Logger::info('cron.scheduler.done', ['jobs' => count($jobs), 'overdue_routines' => count($overdue)]);
+Logger::info('cron.scheduler.done', [
+    'jobs' => count($jobs),
+    'automation_actions' => $autoActions,
+    'overdue_routines' => count($overdue),
+]);
 echo 'OK ' . date('c') . PHP_EOL;

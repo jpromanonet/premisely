@@ -78,6 +78,7 @@ $router->get('/properties/{property}', [PropertyController::class, 'show'], $pro
 $router->get('/properties/{property}/edit', [PropertyController::class, 'edit'], $property);
 $router->post('/properties/{property}', [PropertyController::class, 'update'], $propertyCsrf);
 $router->post('/properties/{property}/archive', [PropertyController::class, 'archive'], $propertyCsrf);
+$router->post('/properties/{property}/delete', [PropertyController::class, 'destroy'], $propertyCsrf);
 $router->get('/properties/{property}/dashboard', [DashboardController::class, 'property'], $property);
 
 // Members
@@ -159,6 +160,76 @@ $router->post('/properties/{property}/documents/{document}/archive', [DocumentCo
 
 // Search
 $router->get('/properties/{property}/search', [SearchController::class, 'index'], $property);
+
+// V1.5 — Providers
+$router->get('/properties/{property}/providers', [\Premisely\Modules\Providers\Controllers\ProviderController::class, 'index'], $property);
+$router->post('/properties/{property}/providers', [\Premisely\Modules\Providers\Controllers\ProviderController::class, 'store'], $propertyCsrf);
+$router->post('/properties/{property}/providers/{provider}/archive', [\Premisely\Modules\Providers\Controllers\ProviderController::class, 'archive'], $propertyCsrf);
+
+// V1.5 — Boxes
+$router->get('/properties/{property}/boxes', [\Premisely\Modules\Boxes\Controllers\BoxController::class, 'index'], $property);
+$router->post('/properties/{property}/boxes', [\Premisely\Modules\Boxes\Controllers\BoxController::class, 'store'], $propertyCsrf);
+$router->get('/properties/{property}/boxes/{box}', [\Premisely\Modules\Boxes\Controllers\BoxController::class, 'show'], $property);
+$router->post('/properties/{property}/boxes/{box}/items', [\Premisely\Modules\Boxes\Controllers\BoxController::class, 'addItem'], $propertyCsrf);
+$router->post('/properties/{property}/boxes/{box}/archive', [\Premisely\Modules\Boxes\Controllers\BoxController::class, 'archive'], $propertyCsrf);
+
+// V1.5 — Meals
+$router->get('/properties/{property}/meals', [\Premisely\Modules\Meals\Controllers\MealController::class, 'index'], $property);
+$router->post('/properties/{property}/meals', [\Premisely\Modules\Meals\Controllers\MealController::class, 'store'], $propertyCsrf);
+$router->post('/properties/{property}/meals/{meal}/delete', [\Premisely\Modules\Meals\Controllers\MealController::class, 'destroy'], $propertyCsrf);
+
+// V1.5 — Clothing
+$router->get('/properties/{property}/clothing', [\Premisely\Modules\Clothing\Controllers\ClothingController::class, 'index'], $property);
+$router->post('/properties/{property}/clothing', [\Premisely\Modules\Clothing\Controllers\ClothingController::class, 'store'], $propertyCsrf);
+$router->post('/properties/{property}/clothing/{item}/archive', [\Premisely\Modules\Clothing\Controllers\ClothingController::class, 'archive'], $propertyCsrf);
+
+// V1.5 — Laundry
+$router->get('/properties/{property}/laundry', [\Premisely\Modules\Laundry\Controllers\LaundryController::class, 'index'], $property);
+$router->post('/properties/{property}/laundry', [\Premisely\Modules\Laundry\Controllers\LaundryController::class, 'store'], $propertyCsrf);
+$router->post('/properties/{property}/laundry/{routine}/execute', [\Premisely\Modules\Laundry\Controllers\LaundryController::class, 'execute'], $propertyCsrf);
+
+// V1.5 — Calendar / Planning / Reports / QR / Warranties
+$router->get('/properties/{property}/calendar', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'index'], $property);
+$router->post('/properties/{property}/calendar/notes', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'storeNote'], $propertyCsrf);
+$router->get('/properties/{property}/planning', [\Premisely\Modules\Planning\Controllers\PlanningController::class, 'weekly'], $property);
+$router->get('/properties/{property}/reports', [\Premisely\Modules\Reports\Controllers\ReportController::class, 'index'], $property);
+$router->get('/properties/{property}/inventory/{item}/qr', [\Premisely\Modules\Qr\Controllers\QrController::class, 'show'], $property);
+$router->post('/properties/{property}/inventory/{item}/warranties', [\Premisely\Modules\Inventory\Controllers\WarrantyController::class, 'store'], $propertyCsrf);
+
+// V2 — Moves
+$router->get('/properties/{property}/moves', [\Premisely\Modules\Moves\Controllers\MoveController::class, 'index'], $property);
+$router->post('/properties/{property}/moves', [\Premisely\Modules\Moves\Controllers\MoveController::class, 'store'], $propertyCsrf);
+$router->get('/properties/{property}/moves/{move}', [\Premisely\Modules\Moves\Controllers\MoveController::class, 'show'], $property);
+$router->post('/properties/{property}/moves/{move}/items', [\Premisely\Modules\Moves\Controllers\MoveController::class, 'addItem'], $propertyCsrf);
+$router->post('/properties/{property}/moves/{move}/apply', [\Premisely\Modules\Moves\Controllers\MoveController::class, 'apply'], $propertyCsrf);
+
+// V2 — Automations
+$router->get('/properties/{property}/automations', [\Premisely\Modules\Automations\Controllers\AutomationController::class, 'index'], $property);
+$router->post('/properties/{property}/automations/run', [\Premisely\Modules\Automations\Controllers\AutomationController::class, 'run'], $propertyCsrf);
+$router->post('/properties/{property}/automations/{rule}/toggle', [\Premisely\Modules\Automations\Controllers\AutomationController::class, 'toggle'], $propertyCsrf);
+
+// V2 — Consumption / Suggestions
+$router->get('/properties/{property}/consumption', [\Premisely\Modules\Consumption\Controllers\ConsumptionController::class, 'index'], $property);
+$router->get('/properties/{property}/suggestions', [\Premisely\Modules\Suggestions\Controllers\SuggestionController::class, 'index'], $property);
+
+// V2 — Import / Export
+$router->get('/properties/{property}/importexport', [\Premisely\Modules\ImportExport\Controllers\ImportExportController::class, 'index'], $property);
+$router->get('/properties/{property}/importexport/export/inventory', [\Premisely\Modules\ImportExport\Controllers\ImportExportController::class, 'exportInventory'], $property);
+$router->get('/properties/{property}/importexport/export/stock', [\Premisely\Modules\ImportExport\Controllers\ImportExportController::class, 'exportStock'], $property);
+$router->get('/properties/{property}/importexport/export/documents-zip', [\Premisely\Modules\ImportExport\Controllers\ImportExportController::class, 'exportDocumentsZip'], $property);
+$router->post('/properties/{property}/importexport/import/inventory', [\Premisely\Modules\ImportExport\Controllers\ImportExportController::class, 'importInventory'], $propertyCsrf);
+$router->post('/properties/{property}/importexport/import/stock', [\Premisely\Modules\ImportExport\Controllers\ImportExportController::class, 'importStock'], $propertyCsrf);
+
+// V2 — API tokens / Integrations
+$router->get('/properties/{property}/api-tokens', [\Premisely\Modules\Api\Controllers\ApiTokenController::class, 'index'], $property);
+$router->post('/properties/{property}/api-tokens', [\Premisely\Modules\Api\Controllers\ApiTokenController::class, 'store'], $propertyCsrf);
+$router->post('/properties/{property}/api-tokens/{token}/revoke', [\Premisely\Modules\Api\Controllers\ApiTokenController::class, 'revoke'], $propertyCsrf);
+$router->get('/properties/{property}/integrations', [\Premisely\Modules\Integrations\Controllers\IntegrationController::class, 'index'], $property);
+$router->post('/properties/{property}/integrations', [\Premisely\Modules\Integrations\Controllers\IntegrationController::class, 'save'], $propertyCsrf);
+
+// Notifications (global)
+$router->get('/notifications', [\Premisely\Modules\Notifications\Controllers\NotificationController::class, 'index'], $auth);
+$router->post('/notifications/{notification}/read', [\Premisely\Modules\Notifications\Controllers\NotificationController::class, 'markRead'], $authCsrf);
 
 // Files
 $router->get('/files/documents/{document}', [FileController::class, 'download'], $auth);

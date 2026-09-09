@@ -63,13 +63,26 @@ final class InventoryController extends Controller
             'SELECT * FROM inventory_item_events WHERE inventory_item_id = :id ORDER BY created_at DESC LIMIT 50',
             ['id' => $item['id']]
         );
+        $warranties = [];
+        try {
+            $warranties = Connection::fetchAll(
+                'SELECT * FROM inventory_item_warranties
+                 WHERE inventory_item_id = :id AND archived_at IS NULL
+                 ORDER BY ends_on IS NULL, ends_on DESC',
+                ['id' => $item['id']]
+            );
+        } catch (\Throwable) {
+            // V1.5 table may not exist yet during transition.
+        }
         $this->view('inventory/show', [
             'title' => $item['name'],
             'heading' => $item['name'],
             'property' => PropertyContext::property(),
             'item' => $item,
             'events' => $events,
+            'warranties' => $warranties,
             'spaces' => $this->spaces(),
+            'canEdit' => PropertyContext::canEdit(),
         ]);
     }
 

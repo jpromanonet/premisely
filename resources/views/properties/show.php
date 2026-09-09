@@ -3,6 +3,7 @@
 /** @var array<string,int> $stats */
 /** @var list<array<string,mixed>> $activity */
 /** @var bool $canEdit */
+/** @var bool $canManage */
 ?>
 <div class="page-header">
     <div>
@@ -13,6 +14,9 @@
         <a class="btn" href="<?= e(url('/properties/' . $property['public_id'] . '/dashboard')) ?>">Panel</a>
         <?php if (!empty($canEdit)): ?>
             <a class="btn btn--ghost" href="<?= e(url('/properties/' . $property['public_id'] . '/edit')) ?>">Editar</a>
+        <?php endif; ?>
+        <?php if (!empty($canManage)): ?>
+            <a class="btn btn--danger" href="<?= e(url('/properties/' . $property['public_id'] . '/edit')) ?>#eliminar">Eliminar</a>
         <?php endif; ?>
     </div>
 </div>

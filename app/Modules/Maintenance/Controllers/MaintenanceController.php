@@ -159,6 +159,7 @@ final class MaintenanceController extends Controller
                         'pid' => $pid,
                     ]
                 );
+                (new \Premisely\Modules\Automations\Services\AutomationRunner())->afterMaintenanceRecord($pid, $planId);
             }
 
             if ($request->input('create_expense') && $cost !== '' && $cost !== null && (float) $cost > 0) {

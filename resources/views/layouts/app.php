@@ -56,9 +56,27 @@ $isActive = static function (string $needle) use ($currentPath): bool {
                 <a class="<?= $isActive('/expenses') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/expenses')) ?>"><span class="nav__icon">¤</span> Gastos</a>
                 <a class="<?= $isActive('/documents') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/documents')) ?>"><span class="nav__icon">▤</span> Documentos</a>
                 <a class="<?= $isActive('/members') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/members')) ?>"><span class="nav__icon">☺</span> Integrantes</a>
+                <div class="nav-section">V1.5</div>
+                <a class="<?= $isActive('/planning') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/planning')) ?>"><span class="nav__icon">▦</span> Plan semanal</a>
+                <a class="<?= $isActive('/meals') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/meals')) ?>"><span class="nav__icon">◉</span> Comidas</a>
+                <a class="<?= $isActive('/laundry') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/laundry')) ?>"><span class="nav__icon">≋</span> Lavandería</a>
+                <a class="<?= $isActive('/clothing') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/clothing')) ?>"><span class="nav__icon">👕</span> Ropa</a>
+                <a class="<?= $isActive('/providers') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/providers')) ?>"><span class="nav__icon">☎</span> Proveedores</a>
+                <a class="<?= $isActive('/boxes') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/boxes')) ?>"><span class="nav__icon">❑</span> Cajas</a>
+                <a class="<?= $isActive('/calendar') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/calendar')) ?>"><span class="nav__icon">☉</span> Calendario</a>
+                <a class="<?= $isActive('/reports') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/reports')) ?>"><span class="nav__icon">▥</span> Reportes</a>
+                <div class="nav-section">V2</div>
+                <a class="<?= $isActive('/moves') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/moves')) ?>"><span class="nav__icon">⇢</span> Mudanzas</a>
+                <a class="<?= $isActive('/automations') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/automations')) ?>"><span class="nav__icon">⚡</span> Automatizaciones</a>
+                <a class="<?= $isActive('/consumption') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/consumption')) ?>"><span class="nav__icon">↘</span> Consumo</a>
+                <a class="<?= $isActive('/suggestions') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/suggestions')) ?>"><span class="nav__icon">💡</span> Sugerencias</a>
+                <a class="<?= $isActive('/importexport') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/importexport')) ?>"><span class="nav__icon">⇄</span> Import/Export</a>
+                <a class="<?= $isActive('/api-tokens') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/api-tokens')) ?>"><span class="nav__icon">🔑</span> API</a>
+                <a class="<?= $isActive('/integrations') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/integrations')) ?>"><span class="nav__icon">⛓</span> Integraciones</a>
             <?php endif; ?>
 
             <div class="nav-section">Cuenta</div>
+            <a class="<?= $isActive('/notifications') ? 'active' : '' ?>" href="<?= e(url('/notifications')) ?>"><span class="nav__icon">🔔</span> Notificaciones</a>
             <a class="<?= $isActive('/settings') || $isActive('/profile') ? 'active' : '' ?>" href="<?= e(url('/settings/profile')) ?>"><span class="nav__icon">⚙</span> Configuración</a>
             <form method="post" action="<?= e(url('/logout')) ?>" style="margin-top:0.35rem">
                 <?= csrf_field() ?>
@@ -103,7 +121,7 @@ $isActive = static function (string $needle) use ($currentPath): bool {
 
         <footer class="site-footer">
             <div><strong>Premisely</strong> — Administrá hoy. Disfrutá mañana.</div>
-            <div>Hogares, espacios, planes y más vida. · V.1.0</div>
+            <div>Hogares, espacios, planes y más vida. · V2</div>
         </footer>
 
         <?php if ($pid !== ''): ?>

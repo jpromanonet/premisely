@@ -6,6 +6,7 @@ namespace Premisely\Modules\Properties\Services;
 
 use Premisely\Core\Auth\Auth;
 use Premisely\Core\Database\Connection;
+use Premisely\Core\Storage\LocalStorage;
 use Premisely\Modules\Activity\Services\ActivityLogger;
 use RuntimeException;
 
@@ -92,5 +93,52 @@ final class PropertyService
             Connection::rollBack();
             throw $e;
         }
+    }
+
+    /** Hard-delete a property and cascaded related rows; removes uploaded files. */
+    public function delete(array $property): void
+    {
+        $propertyId = (int) $property['id'];
+        $publicId = (string) $property['public_id'];
+
+        $docs = Connection::fetchAll(
+            'SELECT file_path FROM documents WHERE property_id = :pid AND file_path IS NOT NULL',
+            ['pid' => $propertyId]
+        );
+
+        $storage = new LocalStorage((string) config('storage.root'));
+        foreach ($docs as $doc) {
+            $path = (string) ($doc['file_path'] ?? '');
+            if ($path !== '') {
+                $storage->delete($path);
+            }
+        }
+
+        $propertyDir = $storage->absolutePath('properties/' . $publicId);
+        if (is_dir($propertyDir)) {
+            $this->removeDirectory($propertyDir);
+        }
+
+        Connection::query('DELETE FROM properties WHERE id = :id', ['id' => $propertyId]);
+    }
+
+    private function removeDirectory(string $dir): void
+    {
+        $items = scandir($dir);
+        if ($items === false) {
+            return;
+        }
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                $this->removeDirectory($path);
+            } else {
+                @unlink($path);
+            }
+        }
+        @rmdir($dir);
     }
 }
