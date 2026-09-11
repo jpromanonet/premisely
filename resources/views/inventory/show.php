@@ -8,28 +8,63 @@
 $pid = $property['public_id'];
 $warranties = $warranties ?? [];
 $spaces = $spaces ?? [];
+
+$money = static function (mixed $value): string {
+    if ($value === null || $value === '') {
+        return '—';
+    }
+    return number_format((float) $value, 2, ',', '.');
+};
+$val = static function (mixed $value): string {
+    $v = trim((string) ($value ?? ''));
+    return $v !== '' ? $v : '—';
+};
+
+$subtitleParts = array_values(array_filter([
+    trim((string) ($item['brand'] ?? '')),
+    trim((string) ($item['model'] ?? '')),
+    trim((string) ($item['space_name'] ?? '')),
+], static fn (string $p): bool => $p !== ''));
 ?>
 <div class="page-header">
     <div>
         <h1><?= e($item['name']) ?></h1>
-        <p><?= e((string) ($item['brand'] ?? '')) ?> <?= e((string) ($item['model'] ?? '')) ?></p>
+        <?php if ($subtitleParts !== []): ?>
+            <p><?= e(implode(' · ', $subtitleParts)) ?></p>
+        <?php endif; ?>
     </div>
     <div class="actions">
+        <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/inventory')) ?>">← Volver</a>
         <a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/inventory/' . $item['public_id'] . '/qr')) ?>">QR</a>
         <?php if (!empty($canEdit)): ?>
-            <a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/inventory/' . $item['public_id'] . '/edit')) ?>">Editar</a>
+            <a class="btn" href="<?= e(url('/properties/' . $pid . '/inventory/' . $item['public_id'] . '/edit')) ?>">Editar</a>
         <?php endif; ?>
     </div>
 </div>
 
 <section class="panel">
-    <p><strong>Estado:</strong> <span class="badge badge-ok"><?= e($item['status']) ?></span>
-       · <strong>Condición:</strong> <?= e($item['condition']) ?></p>
-    <p><strong>Valor estimado:</strong>
-        <?= $item['estimated_value'] !== null ? e(number_format((float)$item['estimated_value'], 0, ',', '.')) : '—' ?>
-    </p>
-    <p><strong>Garantía hasta:</strong> <span class="mono"><?= e($item['warranty_until'] ?? '—') ?></span></p>
-    <p><?= nl2br(e((string) ($item['description'] ?? ''))) ?></p>
+    <h2>Ficha</h2>
+    <div class="form-grid">
+        <div><span class="muted">Estado</span><div><span class="badge badge-ok"><?= e($val($item['status'] ?? null)) ?></span></div></div>
+        <div><span class="muted">Condición</span><div><?= e($val($item['condition'] ?? null)) ?></div></div>
+        <div><span class="muted">Espacio</span><div><?= e($val($item['space_name'] ?? null)) ?></div></div>
+        <div><span class="muted">Categoría</span><div><?= e($val($item['category_name'] ?? null)) ?></div></div>
+        <div><span class="muted">Integrante</span><div><?= e($val($item['owner_name'] ?? null)) ?></div></div>
+        <div><span class="muted">Propiedad de</span><div><?= e($val($item['ownership_type'] ?? null)) ?></div></div>
+        <div><span class="muted">Marca</span><div><?= e($val($item['brand'] ?? null)) ?></div></div>
+        <div><span class="muted">Modelo</span><div><?= e($val($item['model'] ?? null)) ?></div></div>
+        <div><span class="muted">Nº serie</span><div class="mono"><?= e($val($item['serial_number'] ?? null)) ?></div></div>
+        <div><span class="muted">Código interno</span><div class="mono"><?= e($val($item['internal_code'] ?? null)) ?></div></div>
+        <div><span class="muted">Fecha de compra</span><div class="mono"><?= e($val($item['purchase_date'] ?? null)) ?></div></div>
+        <div><span class="muted">Comercio</span><div><?= e($val($item['purchase_store'] ?? null)) ?></div></div>
+        <div><span class="muted">Precio de compra</span><div><?= e($money($item['purchase_price'] ?? null)) ?><?php if (!empty($item['purchase_currency'])): ?> <?= e((string) $item['purchase_currency']) ?><?php endif; ?></div></div>
+        <div><span class="muted">Valor estimado</span><div><?= e($money($item['estimated_value'] ?? null)) ?><?php if (!empty($item['estimated_value_currency'])): ?> <?= e((string) $item['estimated_value_currency']) ?><?php endif; ?></div></div>
+        <div><span class="muted">Garantía hasta</span><div class="mono"><?= e($val($item['warranty_until'] ?? null)) ?></div></div>
+    </div>
+    <?php if (!empty($item['description'])): ?>
+        <h3 style="margin-top:1.25rem">Descripción</h3>
+        <p><?= nl2br(e((string) $item['description'])) ?></p>
+    <?php endif; ?>
 </section>
 
 <?php if (!empty($canEdit)): ?>

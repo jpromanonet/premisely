@@ -17,9 +17,8 @@ final class ApiAuthMiddleware
     /** @param array<string, string> $params */
     public function handle(Request $request, array $params, callable $next): mixed
     {
-        $header = (string) ($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
-        if (preg_match('/^Bearer\s+(\S+)$/i', $header, $m)) {
-            $plain = $m[1];
+        $plain = $this->extractToken();
+        if ($plain !== null && $plain !== '') {
             $hash = hash('sha256', $plain);
             $token = Connection::fetch(
                 'SELECT t.*, u.public_id AS user_public_id, u.name AS user_name, u.email, u.locale, u.timezone, u.preferred_currency, u.is_active
@@ -51,5 +50,44 @@ final class ApiAuthMiddleware
         }
 
         Response::json(['error' => 'Unauthenticated'], 401)->send();
+    }
+
+    private function extractToken(): ?string
+    {
+        $headers = [];
+        foreach ([
+            'HTTP_AUTHORIZATION',
+            'REDIRECT_HTTP_AUTHORIZATION',
+            'HTTP_X_API_TOKEN',
+            'HTTP_X_PREMISELY_TOKEN',
+        ] as $key) {
+            if (!empty($_SERVER[$key])) {
+                $headers[] = (string) $_SERVER[$key];
+            }
+        }
+        if (function_exists('getallheaders')) {
+            foreach (getallheaders() as $name => $value) {
+                if (strcasecmp((string) $name, 'Authorization') === 0
+                    || strcasecmp((string) $name, 'X-Api-Token') === 0
+                    || strcasecmp((string) $name, 'X-Premisely-Token') === 0) {
+                    $headers[] = (string) $value;
+                }
+            }
+        }
+
+        foreach ($headers as $header) {
+            if (preg_match('/^Bearer\s+(\S+)$/i', $header, $m)) {
+                return $m[1];
+            }
+            if (str_starts_with($header, 'prm_')) {
+                return trim($header);
+            }
+        }
+
+        if (!empty($_GET['api_token']) && is_string($_GET['api_token'])) {
+            return $_GET['api_token'];
+        }
+
+        return null;
     }
 }

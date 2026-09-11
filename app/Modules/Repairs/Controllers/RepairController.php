@@ -31,11 +31,25 @@ final class RepairController extends Controller
             'title' => 'Reparaciones',
             'property' => PropertyContext::property(),
             'repairs' => $repairs,
+            'canEdit' => PropertyContext::canEdit(),
+        ]);
+    }
+
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/repairs');
+        }
+        $pid = PropertyContext::propertyId();
+        $this->view('repairs/create', [
+            'title' => 'Nueva reparación',
+            'property' => PropertyContext::property(),
             'spaces' => Connection::fetchAll(
                 'SELECT id, name FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
                 ['pid' => $pid]
             ),
-            'canEdit' => PropertyContext::canEdit(),
+            'canEdit' => true,
         ]);
     }
 
@@ -52,7 +66,7 @@ final class RepairController extends Controller
         ]);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/repairs');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/repairs/create');
         }
 
         $pid = PropertyContext::propertyId();

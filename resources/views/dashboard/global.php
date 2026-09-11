@@ -12,9 +12,9 @@
 <?php else: ?>
   <div class="grid">
     <?php foreach ($properties as $p): ?>
-      <a class="panel" href="<?= e(url('/properties/' . $p['public_id'])) ?>" style="text-decoration:none;color:inherit">
+      <a class="panel" href="<?= e(url('/properties/' . $p['public_id'] . '/dashboard')) ?>" style="text-decoration:none;color:inherit">
         <h3><?= e($p['name']) ?></h3>
-        <p class="muted"><?= e($p['type']) ?> · rol <?= e($p['role']) ?></p>
+        <p class="muted"><?= e(property_type_label($p['type'] ?? null)) ?> · <?= e(property_tenure_label($p['tenure'] ?? null)) ?></p>
       </a>
     <?php endforeach; ?>
   </div>

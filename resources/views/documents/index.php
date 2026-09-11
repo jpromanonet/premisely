@@ -4,27 +4,10 @@
 /** @var bool $canEdit */
 $pid = $property['public_id'];
 ?>
-<div class="page-header"><div><h1>Documentos</h1></div></div>
-<?php if ($canEdit): ?>
-<section class="panel">
-    <h2>Subir documento</h2>
-    <form method="post" action="<?= e(url('/properties/' . $pid . '/documents')) ?>" enctype="multipart/form-data" class="stack">
-        <?= csrf_field() ?>
-        <div class="form-grid">
-            <label>Título <input name="title" required></label>
-            <label>Categoría
-                <select name="category">
-                    <?php foreach (['contrato','garantia','factura','plano','foto','otro'] as $c): ?>
-                        <option value="<?= $c ?>"><?= ucfirst($c) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
-            <label>Archivo <input type="file" name="file" required></label>
-        </div>
-        <button class="btn" type="submit">Subir</button>
-    </form>
-</section>
-<?php endif; ?>
+<div class="page-header">
+    <div><h1>Documentos</h1></div>
+    <?php if (!empty($canEdit)): ?><a class="btn" href="<?= e(url('/properties/' . $pid . '/documents/create')) ?>">+ Nuevo documento</a><?php endif; ?>
+</div>
 <section class="panel">
     <div class="table-wrap">
         <table>

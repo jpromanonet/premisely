@@ -43,9 +43,33 @@ final class MealController extends Controller
         ]);
     }
 
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/meals');
+        }
+        $weekStart = $this->weekStart((string) $request->query('week', ''));
+        $this->view('meals/create', [
+            'title' => 'Agregar comida',
+            'property' => PropertyContext::property(),
+            'weekStart' => $weekStart,
+            'canEdit' => true,
+        ]);
+    }
+
     public function store(Request $request, array $params): never
     {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/meals');
+        }
         $weekStart = $this->weekStart((string) $request->input('week_start', ''));
+        $title = trim((string) $request->input('title', ''));
+        if ($title === '') {
+            flash('error', 'El título es obligatorio.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/meals/create?week=' . $weekStart);
+        }
         $plan = $this->ensurePlan($weekStart);
         Connection::query(
             'INSERT INTO meal_entries (public_id, meal_plan_id, property_id, meal_date, slot, title, notes, created_at)
@@ -56,7 +80,7 @@ final class MealController extends Controller
                 'prop' => PropertyContext::propertyId(),
                 'date' => $request->input('meal_date'),
                 'slot' => $request->input('slot', 'almuerzo'),
-                'title' => $request->input('title'),
+                'title' => $title,
                 'notes' => $request->input('notes'),
             ]
         );

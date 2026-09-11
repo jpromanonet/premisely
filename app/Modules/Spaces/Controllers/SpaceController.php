@@ -28,6 +28,54 @@ final class SpaceController extends Controller
             'heading' => 'Espacios',
             'property' => PropertyContext::property(),
             'spaces' => $spaces,
+            'canEdit' => PropertyContext::canEdit(),
+        ]);
+    }
+
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permiso.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/spaces');
+        }
+        $pid = PropertyContext::propertyId();
+        $spaces = Connection::fetchAll(
+            'SELECT id, name FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
+            ['pid' => $pid]
+        );
+        $this->view('spaces/create', [
+            'title' => 'Nuevo espacio',
+            'property' => PropertyContext::property(),
+            'spaces' => $spaces,
+            'canEdit' => true,
+        ]);
+    }
+
+    public function edit(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permiso.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/spaces');
+        }
+        $id = (int) ($params['space'] ?? 0);
+        $space = Connection::fetch(
+            'SELECT * FROM spaces WHERE id = :id AND property_id = :pid AND archived_at IS NULL LIMIT 1',
+            ['id' => $id, 'pid' => PropertyContext::propertyId()]
+        );
+        if (!$space) {
+            flash('error', 'Espacio no encontrado.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/spaces');
+        }
+        $spaces = Connection::fetchAll(
+            'SELECT id, name, parent_id FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
+            ['pid' => PropertyContext::propertyId()]
+        );
+        $this->view('spaces/edit', [
+            'title' => 'Editar espacio',
+            'property' => PropertyContext::property(),
+            'space' => $space,
+            'spaces' => $spaces,
+            'canEdit' => true,
         ]);
     }
 
@@ -40,7 +88,7 @@ final class SpaceController extends Controller
         $validator = Validator::make($request->all(), ['name' => 'required|max:120']);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/spaces');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/spaces/create');
         }
         Connection::query(
             'INSERT INTO spaces (public_id, property_id, parent_id, name, type, description, created_at)

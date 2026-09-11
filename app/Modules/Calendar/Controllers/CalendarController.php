@@ -85,15 +85,37 @@ final class CalendarController extends Controller
         ]);
     }
 
+    public function createNote(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar');
+        }
+        $this->view('calendar/notes_create', [
+            'title' => 'Nueva nota',
+            'property' => PropertyContext::property(),
+            'canEdit' => true,
+        ]);
+    }
+
     public function storeNote(Request $request, array $params): never
     {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar');
+        }
+        $title = trim((string) $request->input('title', ''));
+        if ($title === '') {
+            flash('error', 'El título es obligatorio.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar/notes/create');
+        }
         Connection::query(
             'INSERT INTO calendar_notes (public_id, property_id, title, note_date, notes, created_by, created_at)
              VALUES (:pid, :prop, :title, :date, :notes, :uid, NOW())',
             [
                 'pid' => ulid(),
                 'prop' => PropertyContext::propertyId(),
-                'title' => $request->input('title'),
+                'title' => $title,
                 'date' => $request->input('note_date') ?: date('Y-m-d'),
                 'notes' => $request->input('notes'),
                 'uid' => \Premisely\Core\Auth\Auth::id(),

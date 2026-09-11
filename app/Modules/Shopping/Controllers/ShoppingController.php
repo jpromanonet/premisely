@@ -26,19 +26,31 @@ final class ShoppingController extends Controller
             ['lid' => $list['id']]
         );
 
-        $stockItems = Connection::fetchAll(
-            'SELECT id, name, unit FROM stock_items
-             WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
-            ['pid' => PropertyContext::propertyId()]
-        );
-
         $this->view('shopping/index', [
             'title' => 'Lista de compras',
             'property' => PropertyContext::property(),
             'list' => $list,
             'items' => $items,
-            'stockItems' => $stockItems,
             'canEdit' => PropertyContext::canEdit(),
+        ]);
+    }
+
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/shopping');
+        }
+        $stockItems = Connection::fetchAll(
+            'SELECT id, name, unit FROM stock_items
+             WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
+            ['pid' => PropertyContext::propertyId()]
+        );
+        $this->view('shopping/create', [
+            'title' => 'Agregar ítem',
+            'property' => PropertyContext::property(),
+            'stockItems' => $stockItems,
+            'canEdit' => true,
         ]);
     }
 
@@ -55,7 +67,7 @@ final class ShoppingController extends Controller
         ]);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/shopping');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/shopping/create');
         }
 
         $list = $this->activeList(true);

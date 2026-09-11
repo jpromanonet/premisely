@@ -26,16 +26,38 @@ final class LaundryController extends Controller
             'title' => 'Lavandería',
             'property' => PropertyContext::property(),
             'routines' => $routines,
+            'canEdit' => PropertyContext::canEdit(),
+        ]);
+    }
+
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/laundry');
+        }
+        $this->view('laundry/create', [
+            'title' => 'Nueva tarea',
+            'property' => PropertyContext::property(),
             'spaces' => Connection::fetchAll(
-                'SELECT * FROM spaces WHERE property_id = :p AND archived_at IS NULL ORDER BY name',
+                'SELECT id, name FROM spaces WHERE property_id = :p AND archived_at IS NULL ORDER BY name',
                 ['p' => PropertyContext::propertyId()]
             ),
-            'canEdit' => PropertyContext::canEdit(),
+            'canEdit' => true,
         ]);
     }
 
     public function store(Request $request, array $params): never
     {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/laundry');
+        }
+        $title = trim((string) $request->input('title', ''));
+        if ($title === '') {
+            flash('error', 'El título es obligatorio.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/laundry/create');
+        }
         $next = $request->input('next_due_at') ?: date('Y-m-d H:i:s');
         Connection::query(
             'INSERT INTO routines (public_id, property_id, space_id, title, description, category, frequency_type, frequency_interval, next_due_at, is_active, created_at)
@@ -44,7 +66,7 @@ final class LaundryController extends Controller
                 'pid' => ulid(),
                 'prop' => PropertyContext::propertyId(),
                 'space' => $request->input('space_id') ?: null,
-                'title' => $request->input('title'),
+                'title' => $title,
                 'desc' => $request->input('description'),
                 'freq' => $request->input('frequency_type', 'weekly'),
                 'interval' => (int) $request->input('frequency_interval', 1),

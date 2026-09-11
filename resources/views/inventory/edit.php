@@ -6,7 +6,10 @@
 /** @var list<array<string,mixed>> $members */
 $pid = $property['public_id'];
 ?>
-<div class="page-header"><div><h1>Editar ítem</h1></div></div>
+<div class="page-header">
+    <div><h1>Editar ítem</h1></div>
+    <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/inventory/' . $item['public_id'])) ?>">← Volver</a>
+</div>
 <section class="panel">
     <form method="post" action="<?= e(url('/properties/' . $pid . '/inventory/' . $item['public_id'])) ?>" class="stack">
         <?= csrf_field() ?>

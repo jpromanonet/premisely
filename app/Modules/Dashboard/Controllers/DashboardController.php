@@ -64,6 +64,24 @@ final class DashboardController extends Controller
         $pid = PropertyContext::propertyId();
 
         $stats = [
+            'rooms' => $property['rooms'] !== null && $property['rooms'] !== '' ? (int) $property['rooms'] : null,
+            'area_m2' => $property['area_m2'] !== null && $property['area_m2'] !== '' ? (float) $property['area_m2'] : null,
+            'spaces' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM spaces WHERE property_id = :pid AND archived_at IS NULL',
+                ['pid' => $pid]
+            ),
+            'inventory' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM inventory_items WHERE property_id = :pid AND archived_at IS NULL',
+                ['pid' => $pid]
+            ),
+            'stock' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM stock_items WHERE property_id = :pid AND archived_at IS NULL',
+                ['pid' => $pid]
+            ),
+            'members' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM property_members WHERE property_id = :pid AND status = \'active\'',
+                ['pid' => $pid]
+            ),
             'open_tasks' => (int) Connection::fetchColumn(
                 'SELECT COUNT(*) FROM tasks WHERE property_id = :pid AND archived_at IS NULL AND status IN (\'pending\',\'in_progress\')',
                 ['pid' => $pid]

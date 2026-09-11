@@ -48,6 +48,7 @@ final class PropertyController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|max:160',
             'type' => 'required|in:casa,departamento,oficina,local,quinta,casa_vacaciones,otra',
+            'tenure' => 'required|in:propia,alquiler',
             'currency' => 'required|max:3',
         ]);
         if ($validator->fails()) {
@@ -56,41 +57,13 @@ final class PropertyController extends Controller
         }
         $property = (new PropertyService())->create(array_merge($validator->validated(), $request->all()));
         flash('success', 'Propiedad creada.');
-        $this->redirect('/properties/' . $property['public_id']);
+        $this->redirect('/properties/' . $property['public_id'] . '/dashboard');
     }
 
     public function show(Request $request, array $params): never
     {
         $property = PropertyContext::property();
-        $pid = PropertyContext::propertyId();
-
-        $stats = [
-            'spaces' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM spaces WHERE property_id = :pid AND archived_at IS NULL',
-                ['pid' => $pid]
-            ),
-            'inventory' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM inventory_items WHERE property_id = :pid AND archived_at IS NULL',
-                ['pid' => $pid]
-            ),
-            'stock' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM stock_items WHERE property_id = :pid AND archived_at IS NULL',
-                ['pid' => $pid]
-            ),
-            'tasks' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM tasks WHERE property_id = :pid AND archived_at IS NULL AND status != \'done\'',
-                ['pid' => $pid]
-            ),
-        ];
-
-        $this->view('properties/show', [
-            'title' => $property['name'],
-            'property' => $property,
-            'stats' => $stats,
-            'activity' => ActivityLogger::forProperty($pid, 15),
-            'canEdit' => PropertyContext::canEdit(),
-            'canManage' => PropertyContext::canManage(),
-        ]);
+        $this->redirect('/properties/' . $property['public_id'] . '/dashboard');
     }
 
     public function edit(Request $request, array $params): never
@@ -112,7 +85,8 @@ final class PropertyController extends Controller
         }
         $validator = Validator::make($request->all(), [
             'name' => 'required|max:160',
-            'type' => 'required|max:40',
+            'type' => 'required|in:casa,departamento,oficina,local,quinta,casa_vacaciones,otra',
+            'tenure' => 'required|in:propia,alquiler',
             'currency' => 'required|max:3',
         ]);
         if ($validator->fails()) {
@@ -121,13 +95,14 @@ final class PropertyController extends Controller
         }
         $data = $validator->validated();
         Connection::query(
-            'UPDATE properties SET name = :name, type = :type, address = :address, description = :description,
+            'UPDATE properties SET name = :name, type = :type, tenure = :tenure, address = :address, description = :description,
              status = :status, currency = :currency, area_m2 = :area_m2, rooms = :rooms,
              managed_since = :managed_since, notes = :notes, updated_at = NOW()
              WHERE id = :id',
             [
                 'name' => $data['name'],
                 'type' => $data['type'],
+                'tenure' => $data['tenure'],
                 'address' => $request->input('address'),
                 'description' => $request->input('description'),
                 'status' => $request->input('status', 'activa'),
@@ -141,7 +116,7 @@ final class PropertyController extends Controller
         );
         ActivityLogger::log((int) $property['id'], 'property', (int) $property['id'], 'updated');
         flash('success', 'Propiedad actualizada.');
-        $this->redirect('/properties/' . $property['public_id']);
+        $this->redirect('/properties/' . $property['public_id'] . '/dashboard');
     }
 
     public function archive(Request $request, array $params): never

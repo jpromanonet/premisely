@@ -1,42 +1,13 @@
 <?php
 /** @var array<string,mixed> $property */
 /** @var list<array<string,mixed>> $tasks */
-/** @var list<array<string,mixed>> $spaces */
-/** @var list<array<string,mixed>> $members */
 /** @var bool $canEdit */
 $pid = $property['public_id'];
 ?>
-<div class="page-header"><div><h1>Tareas</h1></div></div>
-<?php if ($canEdit): ?>
-<section class="panel">
-    <h2>Nueva tarea</h2>
-    <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks')) ?>" class="stack">
-        <?= csrf_field() ?>
-        <div class="form-grid">
-            <label>Título <input name="title" required></label>
-            <label>Prioridad
-                <select name="priority">
-                    <?php foreach (['low','normal','high','urgent'] as $p): ?><option value="<?= $p ?>"><?= $p ?></option><?php endforeach; ?>
-                </select>
-            </label>
-            <label>Vence <input type="date" name="due_date"></label>
-            <label>Espacio
-                <select name="space_id"><option value="">—</option>
-                    <?php foreach ($spaces as $s): ?><option value="<?= (int)$s['id'] ?>"><?= e($s['name']) ?></option><?php endforeach; ?>
-                </select>
-            </label>
-            <label>Asignado
-                <select name="assignee_member_id"><option value="">—</option>
-                    <?php foreach ($members as $m): ?><option value="<?= (int)$m['id'] ?>"><?= e($m['display_name']) ?></option><?php endforeach; ?>
-                </select>
-            </label>
-            <label>Tags <input name="tags"></label>
-        </div>
-        <label>Descripción <textarea name="description"></textarea></label>
-        <button class="btn" type="submit">Crear</button>
-    </form>
-</section>
-<?php endif; ?>
+<div class="page-header">
+    <div><h1>Tareas</h1></div>
+    <?php if (!empty($canEdit)): ?><a class="btn" href="<?= e(url('/properties/' . $pid . '/tasks/create')) ?>">+ Nueva tarea</a><?php endif; ?>
+</div>
 <section class="panel">
     <div class="table-wrap">
         <table>

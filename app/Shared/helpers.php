@@ -199,3 +199,44 @@ if (!function_exists('json_response')) {
         exit;
     }
 }
+
+if (!function_exists('property_type_label')) {
+    function property_type_label(?string $type): string
+    {
+        return match ((string) $type) {
+            'casa' => 'Casa',
+            'departamento' => 'Departamento',
+            'oficina' => 'Oficina',
+            'local' => 'Local',
+            'quinta' => 'Quinta',
+            'casa_vacaciones' => 'Casa de vacaciones',
+            'otra', 'otro' => 'Otra',
+            default => ucfirst((string) $type),
+        };
+    }
+}
+
+if (!function_exists('property_tenure_label')) {
+    function property_tenure_label(?string $tenure): string
+    {
+        return match ((string) $tenure) {
+            'alquiler' => 'Alquiler',
+            'propia' => 'Propia',
+            default => 'Propia',
+        };
+    }
+}
+
+if (!function_exists('member_role_label')) {
+    function member_role_label(?string $role): string
+    {
+        return match ((string) $role) {
+            'owner' => 'Administrador',
+            'admin' => 'Admin',
+            'member' => 'Miembro',
+            'collaborator' => 'Colaborador',
+            'viewer' => 'Lectura',
+            default => (string) $role,
+        };
+    }
+}

@@ -28,20 +28,43 @@ final class ClothingController extends Controller
             'title' => 'Ropa',
             'property' => PropertyContext::property(),
             'items' => $items,
+            'canEdit' => PropertyContext::canEdit(),
+        ]);
+    }
+
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/clothing');
+        }
+        $pid = PropertyContext::propertyId();
+        $this->view('clothing/create', [
+            'title' => 'Nueva prenda',
+            'property' => PropertyContext::property(),
             'members' => Connection::fetchAll(
-                'SELECT * FROM property_members WHERE property_id = :p AND status = \'active\' ORDER BY display_name',
+                'SELECT id, display_name FROM property_members WHERE property_id = :p AND status = \'active\' ORDER BY display_name',
                 ['p' => $pid]
             ),
             'spaces' => Connection::fetchAll(
-                'SELECT * FROM spaces WHERE property_id = :p AND archived_at IS NULL ORDER BY name',
+                'SELECT id, name FROM spaces WHERE property_id = :p AND archived_at IS NULL ORDER BY name',
                 ['p' => $pid]
             ),
-            'canEdit' => PropertyContext::canEdit(),
+            'canEdit' => true,
         ]);
     }
 
     public function store(Request $request, array $params): never
     {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/clothing');
+        }
+        $name = trim((string) $request->input('name', ''));
+        if ($name === '') {
+            flash('error', 'El nombre es obligatorio.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/clothing/create');
+        }
         Connection::query(
             'INSERT INTO clothing_items
              (public_id, property_id, owner_member_id, space_id, name, category, season, size_label, `condition`, status, notes, created_at)
@@ -51,7 +74,7 @@ final class ClothingController extends Controller
                 'prop' => PropertyContext::propertyId(),
                 'owner' => $request->input('owner_member_id') ?: null,
                 'space' => $request->input('space_id') ?: null,
-                'name' => $request->input('name'),
+                'name' => $name,
                 'cat' => $request->input('category', 'prenda'),
                 'season' => $request->input('season'),
                 'size' => $request->input('size_label'),

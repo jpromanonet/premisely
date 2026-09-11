@@ -45,5 +45,5 @@ $pid = $property['public_id'];
             </tbody>
         </table>
     </div>
-    <p class="muted">Ejemplo: <code>Authorization: Bearer prm_…</code> contra <code>/api/v1/properties</code>.</p>
+    <p class="muted">Ejemplo: header <code>Authorization: Bearer prm_…</code> o <code>X-Api-Token: prm_…</code> contra <code>/api/v1/properties</code>.</p>
 </section>

@@ -26,11 +26,29 @@ final class ProviderController extends Controller
         ]);
     }
 
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permiso.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/providers');
+        }
+        $this->view('providers/create', [
+            'title' => 'Nuevo proveedor',
+            'property' => PropertyContext::property(),
+            'canEdit' => true,
+        ]);
+    }
+
     public function store(Request $request, array $params): never
     {
         if (!PropertyContext::canEdit()) {
             flash('error', 'No tenés permiso.');
             $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/providers');
+        }
+        $name = trim((string) $request->input('name', ''));
+        if ($name === '') {
+            flash('error', 'El nombre es obligatorio.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/providers/create');
         }
         Connection::query(
             'INSERT INTO providers (public_id, property_id, name, specialty, phone, email, notes, rating, created_at)
@@ -38,7 +56,7 @@ final class ProviderController extends Controller
             [
                 'pid' => ulid(),
                 'prop' => PropertyContext::propertyId(),
-                'name' => $request->input('name'),
+                'name' => $name,
                 'spec' => $request->input('specialty'),
                 'phone' => $request->input('phone'),
                 'email' => $request->input('email'),

@@ -35,6 +35,19 @@ final class DocumentController extends Controller
         ]);
     }
 
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/documents');
+        }
+        $this->view('documents/create', [
+            'title' => 'Subir documento',
+            'property' => PropertyContext::property(),
+            'canEdit' => true,
+        ]);
+    }
+
     public function store(Request $request, array $params): never
     {
         if (!PropertyContext::canEdit()) {
@@ -47,13 +60,13 @@ final class DocumentController extends Controller
         ]);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/documents');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/documents/create');
         }
 
         $file = $request->file('file');
         if (!$file) {
             flash('error', 'Seleccioná un archivo.');
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/documents');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/documents/create');
         }
 
         $pid = PropertyContext::propertyId();
@@ -64,7 +77,7 @@ final class DocumentController extends Controller
             $relative = $storage->store($file, 'properties/' . $property['public_id'] . '/documents');
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
-            $this->redirect('/properties/' . $property['public_id'] . '/documents');
+            $this->redirect('/properties/' . $property['public_id'] . '/documents/create');
         }
 
         Connection::query(

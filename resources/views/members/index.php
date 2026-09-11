@@ -6,29 +6,8 @@ $pid = $property['public_id'];
 ?>
 <div class="page-header">
     <div><h1>Miembros</h1><p>Personas con acceso a esta propiedad.</p></div>
+    <?php if (!empty($canManage)): ?><a class="btn" href="<?= e(url('/properties/' . $pid . '/members/create')) ?>">+ Nuevo miembro</a><?php endif; ?>
 </div>
-
-<?php if ($canManage): ?>
-<section class="panel">
-    <h2>Agregar miembro</h2>
-    <form method="post" action="<?= e(url('/properties/' . $pid . '/members')) ?>" class="stack">
-        <?= csrf_field() ?>
-        <div class="form-grid">
-            <label>Nombre visible <input name="display_name" required></label>
-            <label>Email <input type="email" name="email"></label>
-            <label>Rol
-                <select name="role">
-                    <?php foreach (['admin','member','collaborator','viewer'] as $r): ?>
-                        <option value="<?= $r ?>"><?= $r ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
-            <label>Tipo <input name="member_type" value="residente"></label>
-        </div>
-        <button class="btn" type="submit">Agregar</button>
-    </form>
-</section>
-<?php endif; ?>
 
 <section class="panel">
     <div class="table-wrap">

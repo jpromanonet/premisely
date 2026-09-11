@@ -25,16 +25,17 @@ final class PropertyService
             $publicId = ulid();
             Connection::query(
                 'INSERT INTO properties (
-                    public_id, name, type, address, description, status, currency,
+                    public_id, name, type, tenure, address, description, status, currency,
                     area_m2, rooms, managed_since, notes, created_by, created_at
                  ) VALUES (
-                    :public_id, :name, :type, :address, :description, :status, :currency,
+                    :public_id, :name, :type, :tenure, :address, :description, :status, :currency,
                     :area_m2, :rooms, :managed_since, :notes, :created_by, NOW()
                  )',
                 [
                     'public_id' => $publicId,
                     'name' => (string) $data['name'],
                     'type' => (string) ($data['type'] ?? 'casa'),
+                    'tenure' => (string) ($data['tenure'] ?? 'propia'),
                     'address' => $data['address'] ?? null,
                     'description' => $data['description'] ?? null,
                     'status' => 'activa',

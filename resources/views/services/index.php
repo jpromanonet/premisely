@@ -5,28 +5,13 @@
 /** @var bool $canEdit */
 $pid = $property['public_id'];
 ?>
-<div class="page-header"><div><h1>Servicios</h1><p>Luz, gas, internet y otros.</p></div></div>
-<?php if ($canEdit): ?>
-<section class="panel">
-    <h2>Nuevo servicio</h2>
-    <form method="post" action="<?= e(url('/properties/' . $pid . '/services')) ?>" class="stack">
-        <?= csrf_field() ?>
-        <div class="form-grid">
-            <label>Nombre <input name="name" required></label>
-            <label>Proveedor <input name="provider"></label>
-            <label>Nº cliente <input name="customer_number"></label>
-            <label>Frecuencia
-                <select name="billing_frequency">
-                    <?php foreach (['monthly','bimonthly','quarterly','yearly'] as $f): ?><option value="<?= $f ?>"><?= $f ?></option><?php endforeach; ?>
-                </select>
-            </label>
-            <label>Monto típico <input type="number" step="0.01" name="typical_amount"></label>
-            <label>Próximo vencimiento <input type="date" name="next_due_date"></label>
-        </div>
-        <button class="btn" type="submit">Crear</button>
-    </form>
-</section>
-<?php endif; ?>
+<div class="page-header">
+    <div>
+        <h1>Servicios</h1>
+        <p>Luz, gas, internet y otros.</p>
+    </div>
+    <?php if (!empty($canEdit)): ?><a class="btn" href="<?= e(url('/properties/' . $pid . '/services/create')) ?>">+ Nuevo servicio</a><?php endif; ?>
+</div>
 <section class="panel">
     <h2>Servicios activos</h2>
     <?php foreach ($services as $s): ?>
@@ -34,15 +19,9 @@ $pid = $property['public_id'];
             <strong><?= e($s['name']) ?></strong>
             <span class="muted"><?= e((string)$s['provider']) ?> · <?= e((string)$s['customer_number']) ?></span>
             <?php if ($canEdit): ?>
-                <form method="post" action="<?= e(url('/properties/' . $pid . '/services/' . $s['public_id'] . '/bills')) ?>" class="form-grid" style="margin-top:.75rem">
-                    <?= csrf_field() ?>
-                    <label>Período <input name="period" placeholder="2026-09"></label>
-                    <label>Monto <input type="number" step="0.01" name="amount" required></label>
-                    <label>Vence <input type="date" name="due_date"></label>
-                    <label>Pagado <input type="date" name="paid_at"></label>
-                    <label><span>Crear gasto (utilities)</span> <input type="checkbox" name="create_expense" value="1" checked></label>
-                    <div><button class="btn btn--sm" type="submit">Agregar factura</button></div>
-                </form>
+                <div style="margin-top:.5rem">
+                    <a class="btn btn--sm" href="<?= e(url('/properties/' . $pid . '/services/' . $s['public_id'] . '/bills/create')) ?>">+ Agregar factura</a>
+                </div>
             <?php endif; ?>
         </article>
     <?php endforeach; ?>

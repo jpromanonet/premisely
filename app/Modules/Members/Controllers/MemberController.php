@@ -26,6 +26,20 @@ final class MemberController extends Controller
             'heading' => 'Integrantes',
             'property' => PropertyContext::property(),
             'members' => $members,
+            'canManage' => PropertyContext::canManage(),
+        ]);
+    }
+
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canManage()) {
+            flash('error', 'No tenés permiso.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/members');
+        }
+        $this->view('members/create', [
+            'title' => 'Agregar miembro',
+            'property' => PropertyContext::property(),
+            'canManage' => true,
         ]);
     }
 
@@ -41,7 +55,7 @@ final class MemberController extends Controller
         ]);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/members');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/members/create');
         }
         $data = $validator->validated();
         $email = trim((string) $request->input('email', ''));

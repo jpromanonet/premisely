@@ -15,7 +15,7 @@ $done = ($move['status'] ?? '') === 'completed';
         <p>Estado: <?= e($move['status']) ?><?php if (!empty($move['completed_at'])): ?> · Aplicada <?= e($move['completed_at']) ?><?php endif; ?></p>
     </div>
     <div class="actions">
-        <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/moves')) ?>">Volver</a>
+        <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/moves')) ?>">← Volver</a>
         <?php if (!empty($canEdit) && !$done): ?>
         <form method="post" action="<?= e(url('/properties/' . $pid . '/moves/' . $move['public_id'] . '/apply')) ?>" onsubmit="return confirm('¿Aplicar mudanza? Esta acción modifica el inventario.');">
             <?= csrf_field() ?>

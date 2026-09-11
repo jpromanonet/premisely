@@ -12,14 +12,15 @@
     <?php else: ?>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th>Rol</th><th></th></tr></thead>
+                <thead><tr><th>Nombre</th><th>Tipo</th><th>Tenencia</th><th>Estado</th><th>Tu rol</th><th></th></tr></thead>
                 <tbody>
                 <?php foreach ($properties as $p): ?>
                     <tr>
                         <td><a href="<?= e(url('/properties/' . $p['public_id'])) ?>"><?= e($p['name']) ?></a></td>
-                        <td><?= e($p['type']) ?></td>
-                        <td><?= e($p['status']) ?></td>
-                        <td><?= e($p['role']) ?></td>
+                        <td><?= e(property_type_label($p['type'] ?? null)) ?></td>
+                        <td><?= e(property_tenure_label($p['tenure'] ?? null)) ?></td>
+                        <td><?= e(ucfirst((string) ($p['status'] ?? ''))) ?></td>
+                        <td><?= e(member_role_label($p['role'] ?? null)) ?></td>
                         <td><a href="<?= e(url('/properties/' . $p['public_id'] . '/dashboard')) ?>">Panel</a></td>
                     </tr>
                 <?php endforeach; ?>

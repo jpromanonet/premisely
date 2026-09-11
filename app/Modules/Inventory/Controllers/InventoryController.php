@@ -140,7 +140,16 @@ final class InventoryController extends Controller
     private function find(string $key): array
     {
         $item = Connection::fetch(
-            'SELECT * FROM inventory_items WHERE property_id = :p AND (public_id = :k OR id = :id) AND archived_at IS NULL LIMIT 1',
+            'SELECT i.*,
+                    s.name AS space_name,
+                    c.name AS category_name,
+                    m.display_name AS owner_name
+             FROM inventory_items i
+             LEFT JOIN spaces s ON s.id = i.space_id
+             LEFT JOIN inventory_categories c ON c.id = i.category_id
+             LEFT JOIN property_members m ON m.id = i.owner_member_id
+             WHERE i.property_id = :p AND (i.public_id = :k OR i.id = :id) AND i.archived_at IS NULL
+             LIMIT 1',
             ['p' => PropertyContext::propertyId(), 'k' => $key, 'id' => ctype_digit($key) ? (int) $key : 0]
         );
         if (!$item) {

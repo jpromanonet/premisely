@@ -32,8 +32,21 @@ final class ExpenseController extends Controller
             'title' => 'Gastos',
             'property' => PropertyContext::property(),
             'expenses' => $expenses,
-            'categories' => Connection::fetchAll('SELECT * FROM expense_categories ORDER BY name'),
             'canEdit' => PropertyContext::canEdit(),
+        ]);
+    }
+
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/expenses');
+        }
+        $this->view('expenses/create', [
+            'title' => 'Nuevo gasto',
+            'property' => PropertyContext::property(),
+            'categories' => Connection::fetchAll('SELECT * FROM expense_categories ORDER BY name'),
+            'canEdit' => true,
         ]);
     }
 
@@ -51,7 +64,7 @@ final class ExpenseController extends Controller
         ]);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/expenses');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/expenses/create');
         }
 
         $pid = PropertyContext::propertyId();

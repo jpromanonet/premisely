@@ -2,7 +2,11 @@
 <div class="page-hero">
     <div class="page-hero__copy">
         <h1><?= e($property['name'] ?? 'Propiedad') ?></h1>
-        <p>Tu hogar, mejor organizado. Resumen operativo de hoy.</p>
+        <p>
+            <?= e((string) ($property['address'] ?? 'Sin dirección')) ?>
+            · <?= e(property_type_label($property['type'] ?? null)) ?>
+            · <?= e(property_tenure_label($property['tenure'] ?? null)) ?>
+        </p>
     </div>
     <div class="page-hero__art">
         <img src="<?= e(asset('icons/hero-window.svg')) ?>" alt="">
@@ -11,6 +15,37 @@
 </div>
 
 <div class="card-grid">
+    <div class="stat">
+        <span>Ambientes</span>
+        <strong><?= $stats['rooms'] !== null ? (int) $stats['rooms'] : '—' ?></strong>
+    </div>
+    <div class="stat">
+        <span>Superficie</span>
+        <strong><?= $stats['area_m2'] !== null ? e(rtrim(rtrim(number_format((float) $stats['area_m2'], 2, ',', '.'), '0'), ',')) . ' m²' : '—' ?></strong>
+    </div>
+    <div class="stat">
+        <span>Espacios</span>
+        <strong><?= (int) $stats['spaces'] ?></strong>
+        <p class="muted" style="margin:.35rem 0 0"><a href="<?= e(url('/properties/' . $pid . '/spaces')) ?>">Ver →</a></p>
+    </div>
+    <div class="stat">
+        <span>Inventario</span>
+        <strong><?= (int) $stats['inventory'] ?></strong>
+        <p class="muted" style="margin:.35rem 0 0"><a href="<?= e(url('/properties/' . $pid . '/inventory')) ?>">Ver →</a></p>
+    </div>
+    <div class="stat">
+        <span>Stock</span>
+        <strong><?= (int) $stats['stock'] ?></strong>
+        <p class="muted" style="margin:.35rem 0 0"><a href="<?= e(url('/properties/' . $pid . '/stock')) ?>">Ver →</a></p>
+    </div>
+    <div class="stat">
+        <span>Integrantes</span>
+        <strong><?= (int) $stats['members'] ?></strong>
+        <p class="muted" style="margin:.35rem 0 0"><a href="<?= e(url('/properties/' . $pid . '/members')) ?>">Ver →</a></p>
+    </div>
+</div>
+
+<div class="card-grid" style="margin-top:1rem">
     <div class="stat">
         <span>Tareas abiertas</span>
         <strong><?= (int) $stats['open_tasks'] ?></strong>
@@ -38,9 +73,10 @@
     </div>
 </div>
 
-<div class="grid">
+<div class="grid dashboard-columns">
     <div class="panel">
         <h3>Tareas de hoy</h3>
+        <div class="panel__body">
         <?php if (!$tasks): ?>
             <p class="muted">Sin tareas pendientes. Todo en orden en esta propiedad.</p>
         <?php else: ?>
@@ -59,11 +95,13 @@
                 <?php endforeach; ?>
             </ul>
         <?php endif; ?>
+        </div>
         <div class="actions"><a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/tasks')) ?>">Ver todas</a></div>
     </div>
 
     <div class="panel">
         <h3>Rutinas próximas</h3>
+        <div class="panel__body">
         <?php if (!$dueSoon): ?>
             <p class="muted">Nada vencido ni próximo.</p>
         <?php else: ?>
@@ -76,11 +114,13 @@
                 <?php endforeach; ?>
             </ul>
         <?php endif; ?>
+        </div>
         <div class="actions"><a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/routines')) ?>">Ver rutinas</a></div>
     </div>
 
     <div class="panel">
         <h3>Actividad reciente</h3>
+        <div class="panel__body">
         <?php if (!$activity): ?>
             <p class="muted">Sin actividad todavía.</p>
         <?php else: ?>
@@ -93,6 +133,7 @@
                 <?php endforeach; ?>
             </ul>
         <?php endif; ?>
+        </div>
     </div>
 </div>
 

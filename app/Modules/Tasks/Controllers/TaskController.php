@@ -31,6 +31,20 @@ final class TaskController extends Controller
             'title' => 'Tareas',
             'property' => PropertyContext::property(),
             'tasks' => $tasks,
+            'canEdit' => PropertyContext::canEdit(),
+        ]);
+    }
+
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks');
+        }
+        $pid = PropertyContext::propertyId();
+        $this->view('tasks/create', [
+            'title' => 'Nueva tarea',
+            'property' => PropertyContext::property(),
             'spaces' => Connection::fetchAll(
                 'SELECT id, name FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
                 ['pid' => $pid]
@@ -39,7 +53,7 @@ final class TaskController extends Controller
                 'SELECT id, display_name FROM property_members WHERE property_id = :pid AND status = \'active\' ORDER BY display_name',
                 ['pid' => $pid]
             ),
-            'canEdit' => PropertyContext::canEdit(),
+            'canEdit' => true,
         ]);
     }
 
@@ -56,7 +70,7 @@ final class TaskController extends Controller
         ]);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks/create');
         }
 
         $pid = PropertyContext::propertyId();

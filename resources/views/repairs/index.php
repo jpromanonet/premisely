@@ -1,32 +1,13 @@
 <?php
 /** @var array<string,mixed> $property */
 /** @var list<array<string,mixed>> $repairs */
-/** @var list<array<string,mixed>> $spaces */
 /** @var bool $canEdit */
 $pid = $property['public_id'];
 ?>
-<div class="page-header"><div><h1>Reparaciones</h1></div></div>
-<?php if ($canEdit): ?>
-<section class="panel">
-    <h2>Nueva reparación</h2>
-    <form method="post" action="<?= e(url('/properties/' . $pid . '/repairs')) ?>" class="stack">
-        <?= csrf_field() ?>
-        <div class="form-grid">
-            <label>Título <input name="title" required></label>
-            <label>Reportada <input type="date" name="reported_at" value="<?= e(date('Y-m-d')) ?>" required></label>
-            <label>Proveedor <input name="provider_name"></label>
-            <label>Presupuesto <input type="number" step="0.01" name="budget"></label>
-            <label>Espacio
-                <select name="space_id"><option value="">—</option>
-                    <?php foreach ($spaces as $s): ?><option value="<?= (int)$s['id'] ?>"><?= e($s['name']) ?></option><?php endforeach; ?>
-                </select>
-            </label>
-        </div>
-        <label>Problema <textarea name="problem_description"></textarea></label>
-        <button class="btn" type="submit">Registrar</button>
-    </form>
-</section>
-<?php endif; ?>
+<div class="page-header">
+    <div><h1>Reparaciones</h1></div>
+    <?php if (!empty($canEdit)): ?><a class="btn" href="<?= e(url('/properties/' . $pid . '/repairs/create')) ?>">+ Nueva reparación</a><?php endif; ?>
+</div>
 <section class="panel">
     <div class="table-wrap">
         <table>

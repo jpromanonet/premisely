@@ -29,8 +29,21 @@ final class MoveController extends Controller
             'title' => 'Mudanzas',
             'property' => PropertyContext::property(),
             'moves' => $moves,
-            'destinations' => $this->otherProperties(),
             'canEdit' => PropertyContext::canEdit(),
+        ]);
+    }
+
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/moves');
+        }
+        $this->view('moves/create', [
+            'title' => 'Nueva mudanza',
+            'property' => PropertyContext::property(),
+            'destinations' => $this->otherProperties(),
+            'canEdit' => true,
         ]);
     }
 
@@ -43,7 +56,7 @@ final class MoveController extends Controller
         $name = trim((string) $request->input('name', ''));
         if ($name === '') {
             flash('error', 'El nombre es obligatorio.');
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/moves');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/moves/create');
         }
         $move = (new MoveService())->create(PropertyContext::propertyId(), [
             'name' => $name,

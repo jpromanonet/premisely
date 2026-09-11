@@ -31,6 +31,20 @@ final class StockController extends Controller
             'title' => 'Stock / Consumibles',
             'property' => PropertyContext::property(),
             'items' => $items,
+            'canEdit' => PropertyContext::canEdit(),
+        ]);
+    }
+
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/stock');
+        }
+        $pid = PropertyContext::propertyId();
+        $this->view('stock/create', [
+            'title' => 'Nuevo ítem',
+            'property' => PropertyContext::property(),
             'spaces' => Connection::fetchAll(
                 'SELECT id, name FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
                 ['pid' => $pid]
@@ -39,7 +53,7 @@ final class StockController extends Controller
                 'SELECT id, name FROM stock_categories WHERE property_id IS NULL OR property_id = :pid ORDER BY name',
                 ['pid' => $pid]
             ),
-            'canEdit' => PropertyContext::canEdit(),
+            'canEdit' => true,
         ]);
     }
 
@@ -56,7 +70,7 @@ final class StockController extends Controller
         ]);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/stock');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/stock/create');
         }
 
         (new StockService())->create(PropertyContext::propertyId(), $request->all());

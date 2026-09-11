@@ -26,9 +26,9 @@
 <?php else: ?>
     <div class="card-grid">
         <?php foreach ($properties as $p): ?>
-            <a class="panel" href="<?= e(url('/properties/' . $p['public_id'])) ?>" style="text-decoration:none;color:inherit;margin:0">
+            <a class="panel" href="<?= e(url('/properties/' . $p['public_id'] . '/dashboard')) ?>" style="text-decoration:none;color:inherit;margin:0">
                 <h3 style="margin:0 0 .35rem"><?= e($p['name']) ?></h3>
-                <p class="muted" style="margin:0"><?= e($p['type']) ?> · <?= e($p['role']) ?></p>
+                <p class="muted" style="margin:0"><?= e(property_type_label($p['type'] ?? null)) ?> · <?= e(property_tenure_label($p['tenure'] ?? null)) ?></p>
             </a>
         <?php endforeach; ?>
     </div>

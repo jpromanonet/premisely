@@ -10,7 +10,7 @@ $pid = $property['public_id'];
         <h1><?= e($box['name']) ?> <span class="mono muted"><?= e($box['code']) ?></span></h1>
         <p><?= e($box['space_name'] ?? 'Sin ubicación') ?><?php if ($box['description']): ?> · <?= e($box['description']) ?><?php endif; ?></p>
     </div>
-    <a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/boxes')) ?>">Volver</a>
+    <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/boxes')) ?>">← Volver</a>
 </div>
 <?php if (!empty($canEdit)): ?>
 <section class="panel">

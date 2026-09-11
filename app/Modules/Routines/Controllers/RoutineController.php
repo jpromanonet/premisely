@@ -33,6 +33,20 @@ final class RoutineController extends Controller
             'title' => 'Rutinas',
             'property' => PropertyContext::property(),
             'routines' => $routines,
+            'canEdit' => PropertyContext::canEdit(),
+        ]);
+    }
+
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/routines');
+        }
+        $pid = PropertyContext::propertyId();
+        $this->view('routines/create', [
+            'title' => 'Nueva rutina',
+            'property' => PropertyContext::property(),
             'spaces' => Connection::fetchAll(
                 'SELECT id, name FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
                 ['pid' => $pid]
@@ -41,7 +55,7 @@ final class RoutineController extends Controller
                 'SELECT id, display_name FROM property_members WHERE property_id = :pid AND status = \'active\' ORDER BY display_name',
                 ['pid' => $pid]
             ),
-            'canEdit' => PropertyContext::canEdit(),
+            'canEdit' => true,
         ]);
     }
 
@@ -58,7 +72,7 @@ final class RoutineController extends Controller
         ]);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/routines');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/routines/create');
         }
 
         $interval = max(1, (int) ($request->input('frequency_interval') ?: 1));

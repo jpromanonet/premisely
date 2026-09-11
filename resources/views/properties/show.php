@@ -8,7 +8,7 @@
 <div class="page-header">
     <div>
         <h1><?= e($property['name']) ?></h1>
-        <p><?= e((string) ($property['address'] ?? 'Sin dirección')) ?> · <?= e($property['type']) ?></p>
+        <p><?= e((string) ($property['address'] ?? 'Sin dirección')) ?> · <?= e(property_type_label($property['type'] ?? null)) ?> · <?= e(property_tenure_label($property['tenure'] ?? null)) ?></p>
     </div>
     <div class="actions">
         <a class="btn" href="<?= e(url('/properties/' . $property['public_id'] . '/dashboard')) ?>">Panel</a>

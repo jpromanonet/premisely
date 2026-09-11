@@ -38,11 +38,43 @@ final class MaintenanceController extends Controller
             'property' => PropertyContext::property(),
             'plans' => $plans,
             'records' => $records,
+            'canEdit' => PropertyContext::canEdit(),
+        ]);
+    }
+
+    public function createPlan(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
+        }
+        $pid = PropertyContext::propertyId();
+        $this->view('maintenance/plans_create', [
+            'title' => 'Nuevo plan',
+            'property' => PropertyContext::property(),
             'spaces' => Connection::fetchAll(
                 'SELECT id, name FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
                 ['pid' => $pid]
             ),
-            'canEdit' => PropertyContext::canEdit(),
+            'canEdit' => true,
+        ]);
+    }
+
+    public function createRecord(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
+        }
+        $pid = PropertyContext::propertyId();
+        $this->view('maintenance/records_create', [
+            'title' => 'Registrar mantenimiento',
+            'property' => PropertyContext::property(),
+            'plans' => Connection::fetchAll(
+                'SELECT id, title FROM maintenance_plans WHERE property_id = :pid AND archived_at IS NULL ORDER BY title',
+                ['pid' => $pid]
+            ),
+            'canEdit' => true,
         ]);
     }
 
@@ -59,7 +91,7 @@ final class MaintenanceController extends Controller
         ]);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance/plans/create');
         }
 
         $interval = max(1, (int) ($request->input('frequency_interval') ?: 1));
@@ -114,7 +146,7 @@ final class MaintenanceController extends Controller
         ]);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance/records/create');
         }
 
         $pid = PropertyContext::propertyId();

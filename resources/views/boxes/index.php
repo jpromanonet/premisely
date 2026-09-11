@@ -1,32 +1,13 @@
 <?php
 /** @var array<string,mixed> $property */
 /** @var list<array<string,mixed>> $boxes */
-/** @var list<array<string,mixed>> $spaces */
 /** @var bool $canEdit */
 $pid = $property['public_id'];
 ?>
 <div class="page-header">
     <div><h1>Cajas y almacenamiento</h1><p>Contenedores físicos y su contenido.</p></div>
+    <?php if (!empty($canEdit)): ?><a class="btn" href="<?= e(url('/properties/' . $pid . '/boxes/create')) ?>">+ Nueva caja</a><?php endif; ?>
 </div>
-<?php if (!empty($canEdit)): ?>
-<section class="panel">
-    <h2>Nueva caja</h2>
-    <form method="post" action="<?= e(url('/properties/' . $pid . '/boxes')) ?>" class="stack">
-        <?= csrf_field() ?>
-        <div class="form-grid">
-            <label>Código <input name="code" placeholder="C12"></label>
-            <label>Nombre <input name="name" required></label>
-            <label>Espacio
-                <select name="space_id"><option value="">—</option>
-                    <?php foreach ($spaces as $s): ?><option value="<?= (int)$s['id'] ?>"><?= e($s['name']) ?></option><?php endforeach; ?>
-                </select>
-            </label>
-        </div>
-        <label>Descripción <textarea name="description"></textarea></label>
-        <button class="btn" type="submit">Crear</button>
-    </form>
-</section>
-<?php endif; ?>
 <section class="panel">
     <div class="card-grid">
         <?php foreach ($boxes as $b): ?>

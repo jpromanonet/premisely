@@ -10,7 +10,7 @@ $pid = $property['public_id'];
         <h1>QR · <?= e($item['name']) ?></h1>
         <p>Escaneá para abrir la ficha del objeto.</p>
     </div>
-    <a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/inventory/' . $item['public_id'])) ?>">Volver a ficha</a>
+    <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/inventory/' . $item['public_id'])) ?>">← Volver</a>
 </div>
 <section class="panel" style="text-align:center">
     <img src="<?= e($qrImage) ?>" alt="QR de <?= e($item['name']) ?>" width="220" height="220" style="border-radius:16px;border:1px solid var(--line);background:#fff;padding:.75rem">

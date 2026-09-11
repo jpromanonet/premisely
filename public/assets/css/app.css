@@ -321,6 +321,30 @@ h1, h2, h3, .brand-wordmark, .display {
   margin-bottom: 1rem;
 }
 .panel h2, .panel h3 { margin-top: 0; }
+
+.dashboard-columns {
+  align-items: start;
+}
+.dashboard-columns .panel {
+  max-height: 700px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+.dashboard-columns .panel h3 {
+  flex: 0 0 auto;
+  margin-bottom: 0.65rem;
+}
+.dashboard-columns .panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.dashboard-columns .panel .actions {
+  flex: 0 0 auto;
+  margin-top: 0.75rem;
+}
 .stat {
   padding: 1rem 1.1rem;
   position: relative;

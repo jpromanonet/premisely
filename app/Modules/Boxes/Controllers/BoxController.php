@@ -28,16 +28,38 @@ final class BoxController extends Controller
             'title' => 'Cajas',
             'property' => PropertyContext::property(),
             'boxes' => $boxes,
-            'spaces' => Connection::fetchAll(
-                'SELECT * FROM spaces WHERE property_id = :p AND archived_at IS NULL ORDER BY name',
-                ['p' => $pid]
-            ),
             'canEdit' => PropertyContext::canEdit(),
+        ]);
+    }
+
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/boxes');
+        }
+        $this->view('boxes/create', [
+            'title' => 'Nueva caja',
+            'property' => PropertyContext::property(),
+            'spaces' => Connection::fetchAll(
+                'SELECT id, name FROM spaces WHERE property_id = :p AND archived_at IS NULL ORDER BY name',
+                ['p' => PropertyContext::propertyId()]
+            ),
+            'canEdit' => true,
         ]);
     }
 
     public function store(Request $request, array $params): never
     {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/boxes');
+        }
+        $name = trim((string) $request->input('name', ''));
+        if ($name === '') {
+            flash('error', 'El nombre es obligatorio.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/boxes/create');
+        }
         $code = trim((string) $request->input('code', ''));
         if ($code === '') {
             $code = 'C' . random_int(10, 99);
@@ -50,7 +72,7 @@ final class BoxController extends Controller
                 'prop' => PropertyContext::propertyId(),
                 'space' => $request->input('space_id') ?: null,
                 'code' => $code,
-                'name' => $request->input('name'),
+                'name' => $name,
                 'desc' => $request->input('description'),
             ]
         );

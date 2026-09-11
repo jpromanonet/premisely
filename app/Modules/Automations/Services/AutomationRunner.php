@@ -20,14 +20,14 @@ final class AutomationRunner
 
     public function ensureDefaults(int $propertyId): void
     {
+        $count = (int) Connection::fetchColumn(
+            'SELECT COUNT(*) FROM automation_rules WHERE property_id = :p',
+            ['p' => $propertyId]
+        );
+        if ($count > 0) {
+            return;
+        }
         foreach (array_keys(self::TYPES) as $type) {
-            $exists = Connection::fetch(
-                'SELECT id FROM automation_rules WHERE property_id = :p AND type = :t LIMIT 1',
-                ['p' => $propertyId, 't' => $type]
-            );
-            if ($exists) {
-                continue;
-            }
             $enabled = $type === 'stock_low_to_shopping' || $type === 'maintenance_complete_next_due' ? 1 : 0;
             Connection::query(
                 'INSERT INTO automation_rules (public_id, property_id, type, enabled, created_at)
@@ -37,9 +37,44 @@ final class AutomationRunner
         }
     }
 
+    /** @return array<string, string> Types not yet configured for this property. */
+    public function availableTypes(int $propertyId): array
+    {
+        $existing = Connection::fetchAll(
+            'SELECT type FROM automation_rules WHERE property_id = :p',
+            ['p' => $propertyId]
+        );
+        $used = array_column($existing, 'type');
+        $available = [];
+        foreach (self::TYPES as $type => $label) {
+            if (!in_array($type, $used, true)) {
+                $available[$type] = $label;
+            }
+        }
+        return $available;
+    }
+
+    public function create(int $propertyId, string $type, bool $enabled = true): void
+    {
+        if (!isset(self::TYPES[$type])) {
+            throw new \InvalidArgumentException('Tipo de automatización inválido.');
+        }
+        $exists = Connection::fetch(
+            'SELECT id FROM automation_rules WHERE property_id = :p AND type = :t LIMIT 1',
+            ['p' => $propertyId, 't' => $type]
+        );
+        if ($exists) {
+            throw new \RuntimeException('Esa automatización ya existe en esta propiedad.');
+        }
+        Connection::query(
+            'INSERT INTO automation_rules (public_id, property_id, type, enabled, created_at)
+             VALUES (:pid, :prop, :type, :en, NOW())',
+            ['pid' => ulid(), 'prop' => $propertyId, 'type' => $type, 'en' => $enabled ? 1 : 0]
+        );
+    }
+
     public function runForProperty(int $propertyId, string $propertyPublicId): int
     {
-        $this->ensureDefaults($propertyId);
         $rules = Connection::fetchAll(
             'SELECT * FROM automation_rules WHERE property_id = :p AND enabled = 1',
             ['p' => $propertyId]

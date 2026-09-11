@@ -13,21 +13,9 @@ $pid = $property['public_id'];
         <a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/calendar', ['month' => $prev])) ?>">←</a>
         <span class="mono"><?= e($month) ?></span>
         <a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/calendar', ['month' => $next])) ?>">→</a>
+        <?php if (!empty($canEdit)): ?><a class="btn" href="<?= e(url('/properties/' . $pid . '/calendar/notes/create')) ?>">+ Nueva nota</a><?php endif; ?>
     </div>
 </div>
-<?php if (!empty($canEdit)): ?>
-<section class="panel">
-    <h2>Nota del día</h2>
-    <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/notes')) ?>" class="stack">
-        <?= csrf_field() ?>
-        <div class="form-grid">
-            <label>Título <input name="title" required></label>
-            <label>Fecha <input type="date" name="note_date" value="<?= e(date('Y-m-d')) ?>"></label>
-        </div>
-        <button class="btn" type="submit">Agregar nota</button>
-    </form>
-</section>
-<?php endif; ?>
 <div class="grid">
 <?php foreach ($days as $day): ?>
     <?php if ($day['events'] === []) continue; ?>

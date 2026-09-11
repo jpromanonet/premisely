@@ -2,7 +2,6 @@
 /** @var array<string,mixed> $property */
 /** @var list<array<string,mixed>> $plans */
 /** @var list<array<string,mixed>> $records */
-/** @var list<array<string,mixed>> $spaces */
 /** @var bool $canEdit */
 $pid = $property['public_id'];
 ?>
@@ -11,53 +10,13 @@ $pid = $property['public_id'];
         <h1>Mantenimiento</h1>
         <p>Cuida hoy, disfrutá siempre.</p>
     </div>
+    <?php if (!empty($canEdit)): ?>
+    <div class="actions">
+        <a class="btn" href="<?= e(url('/properties/' . $pid . '/maintenance/plans/create')) ?>">+ Nuevo plan</a>
+        <a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/maintenance/records/create')) ?>">+ Registrar</a>
+    </div>
+    <?php endif; ?>
 </div>
-<?php if ($canEdit): ?>
-<section class="panel">
-    <h2>Nuevo plan</h2>
-    <form method="post" action="<?= e(url('/properties/' . $pid . '/maintenance/plans')) ?>" class="stack">
-        <?= csrf_field() ?>
-        <div class="form-grid">
-            <label>Título <input name="title" required></label>
-            <label>Frecuencia
-                <select name="frequency_type">
-                    <?php foreach (['weekly','monthly','yearly'] as $f): ?><option value="<?= $f ?>"><?= $f ?></option><?php endforeach; ?>
-                </select>
-            </label>
-            <label>Intervalo <input type="number" name="frequency_interval" value="1" min="1"></label>
-            <label>Proveedor <input name="provider_name"></label>
-            <label>Costo estimado <input type="number" step="0.01" name="estimated_cost"></label>
-            <label>Espacio
-                <select name="space_id"><option value="">—</option>
-                    <?php foreach ($spaces as $s): ?><option value="<?= (int)$s['id'] ?>"><?= e($s['name']) ?></option><?php endforeach; ?>
-                </select>
-            </label>
-        </div>
-        <label>Descripción <textarea name="description"></textarea></label>
-        <button class="btn" type="submit">Crear plan</button>
-    </form>
-</section>
-<section class="panel">
-    <h2>Registrar mantenimiento</h2>
-    <form method="post" action="<?= e(url('/properties/' . $pid . '/maintenance/records')) ?>" class="stack">
-        <?= csrf_field() ?>
-        <div class="form-grid">
-            <label>Título <input name="title" required></label>
-            <label>Fecha <input type="date" name="performed_at" value="<?= e(date('Y-m-d')) ?>" required></label>
-            <label>Costo <input type="number" step="0.01" name="cost"></label>
-            <label>Proveedor <input name="provider_name"></label>
-            <label>Plan
-                <select name="plan_id"><option value="">—</option>
-                    <?php foreach ($plans as $p): ?><option value="<?= (int)$p['id'] ?>"><?= e($p['title']) ?></option><?php endforeach; ?>
-                </select>
-            </label>
-            <label><span>Crear gasto</span> <input type="checkbox" name="create_expense" value="1"></label>
-        </div>
-        <label>Notas <textarea name="notes"></textarea></label>
-        <button class="btn" type="submit">Guardar registro</button>
-    </form>
-</section>
-<?php endif; ?>
 <section class="panel">
     <h2>Planes</h2>
     <div class="table-wrap">

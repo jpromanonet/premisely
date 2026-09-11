@@ -41,6 +41,34 @@ final class ServiceController extends Controller
         ]);
     }
 
+    public function create(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+        }
+        $this->view('services/create', [
+            'title' => 'Nuevo servicio',
+            'property' => PropertyContext::property(),
+            'canEdit' => true,
+        ]);
+    }
+
+    public function createBill(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+        }
+        $service = $this->findService($params['service'] ?? '');
+        $this->view('services/bill_create', [
+            'title' => 'Nueva factura',
+            'property' => PropertyContext::property(),
+            'service' => $service,
+            'canEdit' => true,
+        ]);
+    }
+
     public function store(Request $request, array $params): never
     {
         if (!PropertyContext::canEdit()) {
@@ -53,7 +81,7 @@ final class ServiceController extends Controller
         ]);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services/create');
         }
 
         $pid = PropertyContext::propertyId();
@@ -98,7 +126,7 @@ final class ServiceController extends Controller
         ]);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services/' . $service['public_id'] . '/bills/create');
         }
 
         $pid = PropertyContext::propertyId();

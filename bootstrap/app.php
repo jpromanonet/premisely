@@ -85,9 +85,20 @@ if (PHP_SAPI !== 'cli') {
 
 $installed = is_file(storage_path('installed')) || is_file($root . '/storage/installed');
 
+// Prefer connecting whenever DB looks configured (survives /tmp wipe of installed flag).
+$dbConfigured = (string) env('DB_DATABASE', '') !== '' && (string) env('DB_USERNAME', '') !== '';
+
 try {
-    if ($installed || PHP_SAPI === 'cli') {
+    if ($installed || $dbConfigured || PHP_SAPI === 'cli') {
         Connection::connect($config['database']);
+        // Heal installed markers if DB is reachable but flags were lost (e.g. /tmp cleared).
+        if (!is_file($root . '/storage/installed')) {
+            @mkdir($root . '/storage', 0777, true);
+            @file_put_contents($root . '/storage/installed', date('c'));
+        }
+        if (!is_file(storage_path('installed'))) {
+            @file_put_contents(storage_path('installed'), date('c'));
+        }
     }
 } catch (Throwable $e) {
     Logger::error('database.connect_failed', ['error' => $e->getMessage()]);

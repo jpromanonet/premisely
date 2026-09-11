@@ -1,8 +1,6 @@
 <?php
 /** @var array<string,mixed> $property */
 /** @var list<array<string,mixed>> $items */
-/** @var list<array<string,mixed>> $spaces */
-/** @var list<array<string,mixed>> $categories */
 /** @var bool $canEdit */
 $pid = $property['public_id'];
 ?>
@@ -11,36 +9,11 @@ $pid = $property['public_id'];
         <h1>Stock y compras</h1>
         <p>Consumibles, mínimos y alertas de reposición.</p>
     </div>
-    <a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/shopping')) ?>">Ir a lista de compras</a>
+    <div class="actions">
+        <a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/shopping')) ?>">Ir a lista de compras</a>
+        <?php if (!empty($canEdit)): ?><a class="btn" href="<?= e(url('/properties/' . $pid . '/stock/create')) ?>">+ Nuevo ítem</a><?php endif; ?>
+    </div>
 </div>
-
-<?php if ($canEdit): ?>
-<section class="panel">
-    <h2>Nuevo ítem</h2>
-    <form method="post" action="<?= e(url('/properties/' . $pid . '/stock')) ?>" class="stack">
-        <?= csrf_field() ?>
-        <div class="form-grid">
-            <label>Nombre <input name="name" required></label>
-            <label>Cantidad <input type="number" step="0.001" name="quantity" value="0"></label>
-            <label>Unidad <input name="unit" value="u"></label>
-            <label>Mínimo <input type="number" step="0.001" name="minimum_quantity" value="0"></label>
-            <label>Objetivo <input type="number" step="0.001" name="target_quantity"></label>
-            <label>Espacio
-                <select name="space_id"><option value="">—</option>
-                    <?php foreach ($spaces as $s): ?><option value="<?= (int)$s['id'] ?>"><?= e($s['name']) ?></option><?php endforeach; ?>
-                </select>
-            </label>
-            <label>Categoría
-                <select name="category_id"><option value="">—</option>
-                    <?php foreach ($categories as $c): ?><option value="<?= (int)$c['id'] ?>"><?= e($c['name']) ?></option><?php endforeach; ?>
-                </select>
-            </label>
-            <label><span>Auto agregar a compras</span> <input type="checkbox" name="auto_add_to_shopping" value="1"></label>
-        </div>
-        <button class="btn" type="submit">Crear</button>
-    </form>
-</section>
-<?php endif; ?>
 
 <section class="panel">
     <div class="table-wrap">

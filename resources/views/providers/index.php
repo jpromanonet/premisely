@@ -6,24 +6,8 @@ $pid = $property['public_id'];
 ?>
 <div class="page-header">
     <div><h1>Proveedores</h1><p>Libreta de contactos de la propiedad.</p></div>
+    <?php if (!empty($canEdit)): ?><a class="btn" href="<?= e(url('/properties/' . $pid . '/providers/create')) ?>">+ Nuevo proveedor</a><?php endif; ?>
 </div>
-<?php if (!empty($canEdit)): ?>
-<section class="panel">
-    <h2>Nuevo proveedor</h2>
-    <form method="post" action="<?= e(url('/properties/' . $pid . '/providers')) ?>" class="stack">
-        <?= csrf_field() ?>
-        <div class="form-grid">
-            <label>Nombre <input name="name" required></label>
-            <label>Especialidad <input name="specialty" placeholder="plomero, gasista..."></label>
-            <label>Teléfono <input name="phone"></label>
-            <label>Email <input type="email" name="email"></label>
-            <label>Valoración (1-5) <input type="number" min="1" max="5" name="rating"></label>
-        </div>
-        <label>Notas <textarea name="notes"></textarea></label>
-        <button class="btn" type="submit">Agregar</button>
-    </form>
-</section>
-<?php endif; ?>
 <section class="panel">
     <div class="table-wrap">
         <table>
