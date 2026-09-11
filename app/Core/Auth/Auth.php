@@ -15,7 +15,7 @@ final class Auth
         }
 
         $user = Connection::fetch(
-            'SELECT id, public_id, name, email, password_hash, locale, timezone, preferred_currency, is_active
+            'SELECT id, public_id, name, email, password_hash, avatar_path, locale, timezone, preferred_currency, is_active
              FROM users WHERE email = :email LIMIT 1',
             ['email' => strtolower(trim($email))]
         );
@@ -48,16 +48,7 @@ final class Auth
     /** @param array<string, mixed> $user */
     private static function setSessionUser(array $user): void
     {
-        $_SESSION['user'] = [
-            'id' => (int) $user['id'],
-            'public_id' => (string) $user['public_id'],
-            'name' => (string) $user['name'],
-            'email' => (string) $user['email'],
-            'locale' => (string) ($user['locale'] ?? 'es'),
-            'timezone' => (string) ($user['timezone'] ?? 'UTC'),
-            'preferred_currency' => (string) ($user['preferred_currency'] ?? 'ARS'),
-        ];
-        $_SESSION['_last_activity'] = time();
+        self::writeSessionUser($user);
     }
 
     public static function check(): bool
@@ -105,11 +96,18 @@ final class Auth
     /** Set authenticated user without regenerating the session (API tokens). */
     public static function setUser(array $user): void
     {
+        self::writeSessionUser($user);
+    }
+
+    /** @param array<string, mixed> $user */
+    private static function writeSessionUser(array $user): void
+    {
         $_SESSION['user'] = [
             'id' => (int) $user['id'],
             'public_id' => (string) $user['public_id'],
             'name' => (string) $user['name'],
             'email' => (string) $user['email'],
+            'avatar_path' => $user['avatar_path'] ?? null,
             'locale' => (string) ($user['locale'] ?? 'es'),
             'timezone' => (string) ($user['timezone'] ?? 'UTC'),
             'preferred_currency' => (string) ($user['preferred_currency'] ?? 'ARS'),

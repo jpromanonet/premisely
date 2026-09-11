@@ -118,50 +118,12 @@ final class AuthController extends Controller
     public function profile(Request $request, array $params): never
     {
         Auth::requireLogin();
-        $user = Connection::fetch('SELECT * FROM users WHERE id = :id', ['id' => Auth::id()]);
-        $this->view('settings/profile', [
-            'title' => 'Mi perfil',
-            'user' => $user,
-            'form_action' => '/profile',
-        ]);
+        $this->redirect('/settings/profile');
     }
 
     public function updateProfile(Request $request, array $params): never
     {
         Auth::requireLogin();
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|max:120',
-            'locale' => 'required|max:10',
-            'timezone' => 'required|max:64',
-            'preferred_currency' => 'required|max:3',
-        ]);
-        if ($validator->fails()) {
-            flash('error', $validator->firstError());
-            $this->redirect('/profile');
-        }
-
-        Connection::query(
-            'UPDATE users SET name = :name, locale = :locale, timezone = :timezone,
-             preferred_currency = :currency, notify_email = :notify, updated_at = NOW()
-             WHERE id = :id',
-            [
-                'name' => trim((string) $request->input('name')),
-                'locale' => (string) $request->input('locale'),
-                'timezone' => (string) $request->input('timezone'),
-                'currency' => strtoupper((string) $request->input('preferred_currency')),
-                'notify' => $request->input('notify_email') ? 1 : 0,
-                'id' => Auth::id(),
-            ]
-        );
-
-        if ($_SESSION['user'] ?? null) {
-            $_SESSION['user']['name'] = trim((string) $request->input('name'));
-            $_SESSION['user']['locale'] = (string) $request->input('locale');
-            $_SESSION['user']['timezone'] = (string) $request->input('timezone');
-            $_SESSION['user']['preferred_currency'] = strtoupper((string) $request->input('preferred_currency'));
-        }
-
-        flash('success', 'Perfil actualizado.');
-        $this->redirect('/profile');
+        (new SettingsController())->updateProfile($request, $params);
     }
 }

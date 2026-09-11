@@ -37,15 +37,10 @@ final class AutomationController extends Controller
             flash('error', 'No tenés permisos.');
             $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/automations');
         }
-        $available = (new AutomationRunner())->availableTypes(PropertyContext::propertyId());
-        if ($available === []) {
-            flash('error', 'Ya tenés todas las automatizaciones disponibles.');
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/automations');
-        }
         $this->view('automations/create', [
             'title' => 'Nueva automatización',
             'property' => PropertyContext::property(),
-            'available' => $available,
+            'available' => (new AutomationRunner())->availableTypes(PropertyContext::propertyId()),
             'canManage' => true,
         ]);
     }

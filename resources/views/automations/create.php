@@ -8,6 +8,10 @@ $pid = $property['public_id'];
     <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/automations')) ?>">← Volver</a>
 </div>
 <section class="panel">
+    <?php if ($available === []): ?>
+        <p class="muted">Ya tenés todas las automatizaciones disponibles. Eliminá una de la lista si querés volver a agregarla.</p>
+        <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/automations')) ?>">← Volver</a>
+    <?php else: ?>
     <form method="post" action="<?= e(url('/properties/' . $pid . '/automations')) ?>" class="stack">
         <?= csrf_field() ?>
         <label>Regla
@@ -27,4 +31,5 @@ $pid = $property['public_id'];
             <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/automations')) ?>">Cancelar</a>
         </div>
     </form>
+    <?php endif; ?>
 </section>

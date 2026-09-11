@@ -13,10 +13,8 @@ $available = $available ?? [];
         <p>Reglas simples para stock, garantías y servicios.</p>
     </div>
     <div class="actions">
-        <?php if (!empty($canManage) && $available !== []): ?>
-            <a class="btn" href="<?= e(url('/properties/' . $pid . '/automations/create')) ?>">+ Nueva</a>
-        <?php endif; ?>
         <?php if (!empty($canManage)): ?>
+            <a class="btn" href="<?= e(url('/properties/' . $pid . '/automations/create')) ?>">+ Nueva</a>
             <form method="post" action="<?= e(url('/properties/' . $pid . '/automations/run')) ?>">
                 <?= csrf_field() ?>
                 <button class="btn btn--ghost" type="submit">Ejecutar ahora</button>

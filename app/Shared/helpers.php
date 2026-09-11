@@ -112,7 +112,13 @@ if (!function_exists('asset')) {
     function asset(string $path): string
     {
         $appUrl = rtrim((string) config('app.url', ''), '/');
-        return $appUrl . '/public/assets/' . ltrim($path, '/');
+        $rel = 'public/assets/' . ltrim($path, '/');
+        $url = $appUrl . '/' . $rel;
+        $file = base_path($rel);
+        if (is_file($file)) {
+            $url .= '?v=' . filemtime($file);
+        }
+        return $url;
     }
 }
 

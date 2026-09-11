@@ -18,7 +18,15 @@ final class MemberController extends Controller
     {
         $pid = PropertyContext::propertyId();
         $members = Connection::fetchAll(
-            'SELECT * FROM property_members WHERE property_id = :p ORDER BY status ASC, display_name',
+            'SELECT pm.*,
+                    COALESCE(u.name, pm.display_name) AS display_name,
+                    COALESCE(u.email, pm.email) AS email,
+                    u.avatar_path,
+                    u.public_id AS user_public_id
+             FROM property_members pm
+             LEFT JOIN users u ON u.id = pm.user_id
+             WHERE pm.property_id = :p
+             ORDER BY pm.status ASC, COALESCE(u.name, pm.display_name)',
             ['p' => $pid]
         );
         $this->view('members/index', [
@@ -61,8 +69,12 @@ final class MemberController extends Controller
         $email = trim((string) $request->input('email', ''));
         $userId = null;
         if ($email !== '') {
-            $user = Connection::fetch('SELECT id FROM users WHERE email = :e', ['e' => strtolower($email)]);
+            $user = Connection::fetch('SELECT id, name, email FROM users WHERE email = :e', ['e' => strtolower($email)]);
             $userId = $user['id'] ?? null;
+            if ($user) {
+                $data['display_name'] = (string) $user['name'];
+                $email = (string) $user['email'];
+            }
         }
         Connection::query(
             'INSERT INTO property_members (property_id, user_id, display_name, email, role, member_type, status, joined_at, created_at)

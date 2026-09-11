@@ -55,4 +55,47 @@ final class FileController extends Controller
         readfile($absolute);
         exit;
     }
+
+    public function avatar(Request $request, array $params): never
+    {
+        Auth::requireLogin();
+
+        $publicId = (string) ($params['user'] ?? '');
+        $user = Connection::fetch(
+            'SELECT avatar_path FROM users WHERE public_id = :pid LIMIT 1',
+            ['pid' => $publicId]
+        );
+
+        if (!$user || empty($user['avatar_path'])) {
+            http_response_code(404);
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo 'Avatar no encontrado';
+            exit;
+        }
+
+        $storage = new LocalStorage((string) config('storage.root'));
+        $absolute = $storage->absolutePath((string) $user['avatar_path']);
+        if (!is_file($absolute)) {
+            http_response_code(404);
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo 'Avatar no encontrado';
+            exit;
+        }
+
+        $ext = strtolower(pathinfo($absolute, PATHINFO_EXTENSION));
+        $mime = match ($ext) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            default => 'application/octet-stream',
+        };
+
+        header('Content-Type: ' . $mime);
+        header('Content-Length: ' . (string) filesize($absolute));
+        header('Cache-Control: private, max-age=3600');
+        header('X-Content-Type-Options: nosniff');
+        readfile($absolute);
+        exit;
+    }
 }

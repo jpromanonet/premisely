@@ -66,6 +66,7 @@ $router->get('/settings', [SettingsController::class, 'edit'], $auth);
 $router->post('/settings', [SettingsController::class, 'update'], $authCsrf);
 $router->get('/settings/profile', [SettingsController::class, 'profile'], $auth);
 $router->post('/settings/profile', [SettingsController::class, 'updateProfile'], $authCsrf);
+$router->post('/settings/password', [SettingsController::class, 'updatePassword'], $authCsrf);
 
 // Global dashboard
 $router->get('/dashboard', [DashboardController::class, 'index'], $auth);
@@ -258,3 +259,4 @@ $router->post('/notifications/{notification}/read', [\Premisely\Modules\Notifica
 
 // Files
 $router->get('/files/documents/{document}', [FileController::class, 'download'], $auth);
+$router->get('/avatars/{user}', [FileController::class, 'avatar'], $auth);
