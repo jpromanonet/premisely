@@ -21,10 +21,13 @@ $pid = $property['public_id'];
                     <td><?= e($p['email'] ?? '—') ?></td>
                     <td>
                         <?php if (!empty($canEdit)): ?>
-                        <form method="post" action="<?= e(url('/properties/' . $pid . '/providers/' . $p['public_id'] . '/archive')) ?>">
-                            <?= csrf_field() ?>
-                            <button class="btn btn-danger btn--sm" data-confirm="¿Archivar?" type="submit">Archivar</button>
-                        </form>
+                        <div class="actions" style="margin-top:0">
+                            <a class="btn btn--ghost btn--sm" href="<?= e(url('/properties/' . $pid . '/providers/' . $p['public_id'] . '/edit')) ?>">Editar</a>
+                            <form method="post" action="<?= e(url('/properties/' . $pid . '/providers/' . $p['public_id'] . '/archive')) ?>" onsubmit="return confirm('¿Eliminar este proveedor?');">
+                                <?= csrf_field() ?>
+                                <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
+                            </form>
+                        </div>
                         <?php endif; ?>
                     </td>
                 </tr>

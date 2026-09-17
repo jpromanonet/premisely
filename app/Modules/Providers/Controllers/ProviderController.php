@@ -69,6 +69,57 @@ final class ProviderController extends Controller
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/providers');
     }
 
+    public function edit(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permiso.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/providers');
+        }
+        $provider = Connection::fetch(
+            'SELECT * FROM providers WHERE public_id = :pid AND property_id = :prop AND archived_at IS NULL LIMIT 1',
+            ['pid' => $params['provider'] ?? '', 'prop' => PropertyContext::propertyId()]
+        );
+        if (!$provider) {
+            flash('error', 'Proveedor no encontrado.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/providers');
+        }
+        $this->view('providers/edit', [
+            'title' => 'Editar proveedor',
+            'property' => PropertyContext::property(),
+            'provider' => $provider,
+            'canEdit' => true,
+        ]);
+    }
+
+    public function update(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permiso.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/providers');
+        }
+        $name = trim((string) $request->input('name', ''));
+        if ($name === '') {
+            flash('error', 'El nombre es obligatorio.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/providers/' . ($params['provider'] ?? '') . '/edit');
+        }
+        Connection::query(
+            'UPDATE providers SET name = :name, specialty = :spec, phone = :phone, email = :email, notes = :notes, rating = :rating
+             WHERE public_id = :pid AND property_id = :prop AND archived_at IS NULL',
+            [
+                'name' => $name,
+                'spec' => $request->input('specialty'),
+                'phone' => $request->input('phone'),
+                'email' => $request->input('email'),
+                'notes' => $request->input('notes'),
+                'rating' => $request->input('rating') !== '' ? (int) $request->input('rating') : null,
+                'pid' => $params['provider'] ?? '',
+                'prop' => PropertyContext::propertyId(),
+            ]
+        );
+        flash('success', 'Proveedor actualizado.');
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/providers');
+    }
+
     public function archive(Request $request, array $params): never
     {
         Connection::query(

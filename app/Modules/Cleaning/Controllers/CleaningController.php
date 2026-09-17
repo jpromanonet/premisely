@@ -85,9 +85,66 @@ final class CleaningController extends Controller
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/cleaning');
     }
 
+    public function edit(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/cleaning');
+        }
+        $routine = $this->findCleaningRoutine($params['routine'] ?? '');
+        $pid = PropertyContext::propertyId();
+        $prop = PropertyContext::property()['public_id'];
+        $this->view('routines/edit', [
+            'title' => 'Editar limpieza',
+            'heading' => 'Editar rutina de limpieza',
+            'property' => PropertyContext::property(),
+            'routine' => $routine,
+            'spaces' => Connection::fetchAll(
+                'SELECT id, name FROM spaces WHERE property_id = :p AND archived_at IS NULL ORDER BY name',
+                ['p' => $pid]
+            ),
+            'members' => Connection::fetchAll(
+                'SELECT id, display_name FROM property_members WHERE property_id = :p AND status = \'active\' ORDER BY display_name',
+                ['p' => $pid]
+            ),
+            'listPath' => '/properties/' . $prop . '/cleaning',
+            'formAction' => '/properties/' . $prop . '/cleaning/' . $routine['public_id'],
+            'fixedCategory' => 'cleaning',
+            'canEdit' => true,
+        ]);
+    }
+
+    public function update(Request $request, array $params): never
+    {
+        $_POST['category'] = 'cleaning';
+        $_POST['redirect'] = '/properties/' . PropertyContext::property()['public_id'] . '/cleaning';
+        (new RoutineController())->update(Request::capture(), $params);
+    }
+
     public function execute(Request $request, array $params): never
     {
-        $key = (string) ($params['routine'] ?? '');
+        $routine = $this->findCleaningRoutine($params['routine'] ?? '');
+        $_POST['notes'] = $request->input('notes');
+        $_POST['redirect'] = '/properties/' . PropertyContext::property()['public_id'] . '/cleaning';
+        $params['routine'] = $routine['public_id'];
+        (new RoutineController())->execute(Request::capture(), $params);
+    }
+
+    public function destroy(Request $request, array $params): never
+    {
+        $_POST['redirect'] = '/properties/' . PropertyContext::property()['public_id'] . '/cleaning';
+        (new RoutineController())->archive(Request::capture(), $params);
+    }
+
+    public function toggle(Request $request, array $params): never
+    {
+        $_POST['redirect'] = '/properties/' . PropertyContext::property()['public_id'] . '/cleaning';
+        (new RoutineController())->toggleActive(Request::capture(), $params);
+    }
+
+    /** @return array<string, mixed> */
+    private function findCleaningRoutine(string $key): array
+    {
         $routine = Connection::fetch(
             'SELECT * FROM routines
              WHERE property_id = :pid AND category = \'cleaning\' AND archived_at IS NULL
@@ -101,12 +158,8 @@ final class CleaningController extends Controller
         );
         if (!$routine) {
             flash('error', 'Tarea no encontrada.');
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/cleaning');
+            redirect('/properties/' . PropertyContext::property()['public_id'] . '/cleaning');
         }
-
-        $_POST['notes'] = $request->input('notes');
-        $_POST['redirect'] = '/properties/' . PropertyContext::property()['public_id'] . '/cleaning';
-        $params['routine'] = $routine['public_id'];
-        (new RoutineController())->execute(Request::capture(), $params);
+        return $routine;
     }
 }

@@ -126,6 +126,8 @@ $router->post('/properties/{property}/shopping/{item}/delete', [ShoppingControll
 $router->get('/properties/{property}/tasks', [TaskController::class, 'index'], $property);
 $router->get('/properties/{property}/tasks/create', [TaskController::class, 'create'], $property);
 $router->post('/properties/{property}/tasks', [TaskController::class, 'store'], $propertyCsrf);
+$router->get('/properties/{property}/tasks/{task}/edit', [TaskController::class, 'edit'], $property);
+$router->post('/properties/{property}/tasks/{task}', [TaskController::class, 'update'], $propertyCsrf);
 $router->post('/properties/{property}/tasks/{task}/status', [TaskController::class, 'updateStatus'], $propertyCsrf);
 $router->post('/properties/{property}/tasks/{task}/archive', [TaskController::class, 'archive'], $propertyCsrf);
 
@@ -133,34 +135,54 @@ $router->post('/properties/{property}/tasks/{task}/archive', [TaskController::cl
 $router->get('/properties/{property}/routines', [RoutineController::class, 'index'], $property);
 $router->get('/properties/{property}/routines/create', [RoutineController::class, 'create'], $property);
 $router->post('/properties/{property}/routines', [RoutineController::class, 'store'], $propertyCsrf);
+$router->get('/properties/{property}/routines/{routine}/edit', [RoutineController::class, 'edit'], $property);
+$router->post('/properties/{property}/routines/{routine}', [RoutineController::class, 'update'], $propertyCsrf);
 $router->post('/properties/{property}/routines/{routine}/execute', [RoutineController::class, 'execute'], $propertyCsrf);
+$router->post('/properties/{property}/routines/{routine}/toggle', [RoutineController::class, 'toggleActive'], $propertyCsrf);
+$router->post('/properties/{property}/routines/{routine}/delete', [RoutineController::class, 'archive'], $propertyCsrf);
 
 // Cleaning
 $router->get('/properties/{property}/cleaning', [CleaningController::class, 'index'], $property);
 $router->get('/properties/{property}/cleaning/create', [CleaningController::class, 'create'], $property);
 $router->post('/properties/{property}/cleaning', [CleaningController::class, 'store'], $propertyCsrf);
+$router->get('/properties/{property}/cleaning/{routine}/edit', [CleaningController::class, 'edit'], $property);
+$router->post('/properties/{property}/cleaning/{routine}', [CleaningController::class, 'update'], $propertyCsrf);
 $router->post('/properties/{property}/cleaning/{routine}/execute', [CleaningController::class, 'execute'], $propertyCsrf);
+$router->post('/properties/{property}/cleaning/{routine}/toggle', [CleaningController::class, 'toggle'], $propertyCsrf);
+$router->post('/properties/{property}/cleaning/{routine}/delete', [CleaningController::class, 'destroy'], $propertyCsrf);
 
 // Maintenance
 $router->get('/properties/{property}/maintenance', [MaintenanceController::class, 'index'], $property);
 $router->get('/properties/{property}/maintenance/plans/create', [MaintenanceController::class, 'createPlan'], $property);
 $router->post('/properties/{property}/maintenance/plans', [MaintenanceController::class, 'storePlan'], $propertyCsrf);
+$router->get('/properties/{property}/maintenance/plans/{plan}/edit', [MaintenanceController::class, 'editPlan'], $property);
+$router->post('/properties/{property}/maintenance/plans/{plan}', [MaintenanceController::class, 'updatePlan'], $propertyCsrf);
+$router->post('/properties/{property}/maintenance/plans/{plan}/delete', [MaintenanceController::class, 'destroyPlan'], $propertyCsrf);
 $router->get('/properties/{property}/maintenance/records/create', [MaintenanceController::class, 'createRecord'], $property);
 $router->post('/properties/{property}/maintenance/records', [MaintenanceController::class, 'storeRecord'], $propertyCsrf);
+$router->post('/properties/{property}/maintenance/records/{record}/delete', [MaintenanceController::class, 'destroyRecord'], $propertyCsrf);
 
 // Repairs
 $router->get('/properties/{property}/repairs', [RepairController::class, 'index'], $property);
 $router->get('/properties/{property}/repairs/create', [RepairController::class, 'create'], $property);
 $router->post('/properties/{property}/repairs', [RepairController::class, 'store'], $propertyCsrf);
+$router->get('/properties/{property}/repairs/{repair}/edit', [RepairController::class, 'edit'], $property);
+$router->post('/properties/{property}/repairs/{repair}/edit', [RepairController::class, 'save'], $propertyCsrf);
 $router->post('/properties/{property}/repairs/{repair}', [RepairController::class, 'update'], $propertyCsrf);
 $router->post('/properties/{property}/repairs/{repair}/close', [RepairController::class, 'close'], $propertyCsrf);
+$router->post('/properties/{property}/repairs/{repair}/delete', [RepairController::class, 'destroy'], $propertyCsrf);
 
 // Services
 $router->get('/properties/{property}/services', [ServiceController::class, 'index'], $property);
 $router->get('/properties/{property}/services/create', [ServiceController::class, 'create'], $property);
 $router->post('/properties/{property}/services', [ServiceController::class, 'store'], $propertyCsrf);
+$router->get('/properties/{property}/services/{service}/edit', [ServiceController::class, 'edit'], $property);
+$router->post('/properties/{property}/services/{service}', [ServiceController::class, 'update'], $propertyCsrf);
 $router->get('/properties/{property}/services/{service}/bills/create', [ServiceController::class, 'createBill'], $property);
 $router->post('/properties/{property}/services/{service}/bills', [ServiceController::class, 'addBill'], $propertyCsrf);
+$router->post('/properties/{property}/services/{service}/status', [ServiceController::class, 'updateStatus'], $propertyCsrf);
+$router->post('/properties/{property}/services/{service}/delete', [ServiceController::class, 'destroy'], $propertyCsrf);
+$router->post('/properties/{property}/services/bills/{bill}/delete', [ServiceController::class, 'destroyBill'], $propertyCsrf);
 
 // Expenses
 $router->get('/properties/{property}/expenses', [ExpenseController::class, 'index'], $property);
@@ -181,6 +203,8 @@ $router->get('/properties/{property}/search', [SearchController::class, 'index']
 $router->get('/properties/{property}/providers', [\Premisely\Modules\Providers\Controllers\ProviderController::class, 'index'], $property);
 $router->get('/properties/{property}/providers/create', [\Premisely\Modules\Providers\Controllers\ProviderController::class, 'create'], $property);
 $router->post('/properties/{property}/providers', [\Premisely\Modules\Providers\Controllers\ProviderController::class, 'store'], $propertyCsrf);
+$router->get('/properties/{property}/providers/{provider}/edit', [\Premisely\Modules\Providers\Controllers\ProviderController::class, 'edit'], $property);
+$router->post('/properties/{property}/providers/{provider}', [\Premisely\Modules\Providers\Controllers\ProviderController::class, 'update'], $propertyCsrf);
 $router->post('/properties/{property}/providers/{provider}/archive', [\Premisely\Modules\Providers\Controllers\ProviderController::class, 'archive'], $propertyCsrf);
 
 // V1.5 — Boxes
@@ -195,6 +219,8 @@ $router->post('/properties/{property}/boxes/{box}/archive', [\Premisely\Modules\
 $router->get('/properties/{property}/meals', [\Premisely\Modules\Meals\Controllers\MealController::class, 'index'], $property);
 $router->get('/properties/{property}/meals/create', [\Premisely\Modules\Meals\Controllers\MealController::class, 'create'], $property);
 $router->post('/properties/{property}/meals', [\Premisely\Modules\Meals\Controllers\MealController::class, 'store'], $propertyCsrf);
+$router->get('/properties/{property}/meals/{meal}/edit', [\Premisely\Modules\Meals\Controllers\MealController::class, 'edit'], $property);
+$router->post('/properties/{property}/meals/{meal}', [\Premisely\Modules\Meals\Controllers\MealController::class, 'update'], $propertyCsrf);
 $router->post('/properties/{property}/meals/{meal}/delete', [\Premisely\Modules\Meals\Controllers\MealController::class, 'destroy'], $propertyCsrf);
 
 // V1.5 — Clothing
@@ -207,12 +233,19 @@ $router->post('/properties/{property}/clothing/{item}/archive', [\Premisely\Modu
 $router->get('/properties/{property}/laundry', [\Premisely\Modules\Laundry\Controllers\LaundryController::class, 'index'], $property);
 $router->get('/properties/{property}/laundry/create', [\Premisely\Modules\Laundry\Controllers\LaundryController::class, 'create'], $property);
 $router->post('/properties/{property}/laundry', [\Premisely\Modules\Laundry\Controllers\LaundryController::class, 'store'], $propertyCsrf);
+$router->get('/properties/{property}/laundry/{routine}/edit', [\Premisely\Modules\Laundry\Controllers\LaundryController::class, 'edit'], $property);
+$router->post('/properties/{property}/laundry/{routine}', [\Premisely\Modules\Laundry\Controllers\LaundryController::class, 'update'], $propertyCsrf);
 $router->post('/properties/{property}/laundry/{routine}/execute', [\Premisely\Modules\Laundry\Controllers\LaundryController::class, 'execute'], $propertyCsrf);
+$router->post('/properties/{property}/laundry/{routine}/toggle', [\Premisely\Modules\Laundry\Controllers\LaundryController::class, 'toggle'], $propertyCsrf);
+$router->post('/properties/{property}/laundry/{routine}/delete', [\Premisely\Modules\Laundry\Controllers\LaundryController::class, 'destroy'], $propertyCsrf);
 
 // V1.5 — Calendar / Planning / Reports / QR / Warranties
 $router->get('/properties/{property}/calendar', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'index'], $property);
 $router->get('/properties/{property}/calendar/notes/create', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'createNote'], $property);
 $router->post('/properties/{property}/calendar/notes', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'storeNote'], $propertyCsrf);
+$router->get('/properties/{property}/calendar/notes/{note}/edit', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'editNote'], $property);
+$router->post('/properties/{property}/calendar/notes/{note}', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'updateNote'], $propertyCsrf);
+$router->post('/properties/{property}/calendar/notes/{note}/delete', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'destroyNote'], $propertyCsrf);
 $router->get('/properties/{property}/planning', [\Premisely\Modules\Planning\Controllers\PlanningController::class, 'weekly'], $property);
 $router->get('/properties/{property}/reports', [\Premisely\Modules\Reports\Controllers\ReportController::class, 'index'], $property);
 $router->get('/properties/{property}/inventory/{item}/qr', [\Premisely\Modules\Qr\Controllers\QrController::class, 'show'], $property);

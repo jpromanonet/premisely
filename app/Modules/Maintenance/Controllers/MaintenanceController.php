@@ -218,4 +218,140 @@ final class MaintenanceController extends Controller
         flash('success', 'Registro de mantenimiento guardado.');
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
     }
+
+    public function editPlan(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
+        }
+        $plan = $this->findPlan($params['plan'] ?? '');
+        $this->view('maintenance/plans_edit', [
+            'title' => 'Editar plan',
+            'property' => PropertyContext::property(),
+            'plan' => $plan,
+            'spaces' => Connection::fetchAll(
+                'SELECT id, name FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
+                ['pid' => PropertyContext::propertyId()]
+            ),
+            'canEdit' => true,
+        ]);
+    }
+
+    public function updatePlan(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
+        }
+        $plan = $this->findPlan($params['plan'] ?? '');
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|max:200',
+            'frequency_type' => 'required|in:monthly,yearly,weekly',
+        ]);
+        if ($validator->fails()) {
+            flash('error', $validator->firstError());
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance/plans/' . $plan['public_id'] . '/edit');
+        }
+        Connection::query(
+            'UPDATE maintenance_plans SET
+                title = :title,
+                description = :description,
+                frequency_type = :frequency_type,
+                frequency_interval = :frequency_interval,
+                provider_name = :provider_name,
+                estimated_cost = :estimated_cost,
+                next_due_at = :next_due_at,
+                space_id = :space_id,
+                updated_at = NOW()
+             WHERE id = :id AND property_id = :pid',
+            [
+                'title' => (string) $request->input('title'),
+                'description' => $request->input('description'),
+                'frequency_type' => (string) $request->input('frequency_type'),
+                'frequency_interval' => max(1, (int) ($request->input('frequency_interval') ?: 1)),
+                'provider_name' => $request->input('provider_name'),
+                'estimated_cost' => $request->input('estimated_cost') !== '' ? $request->input('estimated_cost') : null,
+                'next_due_at' => $request->input('next_due_at') ?: null,
+                'space_id' => $request->input('space_id') !== '' && $request->input('space_id') !== null
+                    ? (int) $request->input('space_id') : null,
+                'id' => $plan['id'],
+                'pid' => PropertyContext::propertyId(),
+            ]
+        );
+        ActivityLogger::log(PropertyContext::propertyId(), 'maintenance_plan', (int) $plan['id'], 'updated');
+        flash('success', 'Plan actualizado.');
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
+    }
+
+    public function destroyPlan(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
+        }
+
+        $plan = $this->findPlan($params['plan'] ?? '');
+        Connection::query(
+            'UPDATE maintenance_plans SET archived_at = NOW(), updated_at = NOW()
+             WHERE id = :id AND property_id = :pid',
+            ['id' => $plan['id'], 'pid' => PropertyContext::propertyId()]
+        );
+        ActivityLogger::log(PropertyContext::propertyId(), 'maintenance_plan', (int) $plan['id'], 'archived');
+        flash('success', 'Plan eliminado.');
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
+    }
+
+    public function destroyRecord(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
+        }
+
+        $key = (string) ($params['record'] ?? '');
+        $record = Connection::fetch(
+            'SELECT * FROM maintenance_records
+             WHERE property_id = :pid AND (public_id = :key OR id = :id)
+             LIMIT 1',
+            [
+                'pid' => PropertyContext::propertyId(),
+                'key' => $key,
+                'id' => ctype_digit($key) ? (int) $key : 0,
+            ]
+        );
+        if (!$record) {
+            flash('error', 'Registro no encontrado.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
+        }
+
+        Connection::query(
+            'DELETE FROM maintenance_records WHERE id = :id AND property_id = :pid',
+            ['id' => $record['id'], 'pid' => PropertyContext::propertyId()]
+        );
+        ActivityLogger::log(PropertyContext::propertyId(), 'maintenance_record', (int) $record['id'], 'deleted');
+        flash('success', 'Registro eliminado.');
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
+    }
+
+    /** @return array<string, mixed> */
+    private function findPlan(string $key): array
+    {
+        $plan = Connection::fetch(
+            'SELECT * FROM maintenance_plans
+             WHERE property_id = :pid AND archived_at IS NULL
+               AND (public_id = :key OR id = :id)
+             LIMIT 1',
+            [
+                'pid' => PropertyContext::propertyId(),
+                'key' => $key,
+                'id' => ctype_digit($key) ? (int) $key : 0,
+            ]
+        );
+        if (!$plan) {
+            flash('error', 'Plan no encontrado.');
+            redirect('/properties/' . PropertyContext::property()['public_id'] . '/maintenance');
+        }
+        return $plan;
+    }
 }

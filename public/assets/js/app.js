@@ -10,7 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('[data-auto-submit]').forEach((el) => {
     el.addEventListener('change', () => {
-      el.closest('form')?.submit();
+      const formId = el.getAttribute('form');
+      const form = formId ? document.getElementById(formId) : el.closest('form');
+      form?.requestSubmit ? form.requestSubmit() : form?.submit();
     });
   });
 

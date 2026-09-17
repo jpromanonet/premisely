@@ -364,7 +364,7 @@ return [
         problem_description TEXT NULL,
         reported_at DATE NOT NULL,
         closed_at DATE NULL,
-        status VARCHAR(40) NOT NULL DEFAULT 'open',
+        status VARCHAR(40) NOT NULL DEFAULT 'pendiente',
         provider_name VARCHAR(160) NULL,
         budget DECIMAL(14,2) NULL,
         cost DECIMAL(14,2) NULL,

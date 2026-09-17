@@ -104,6 +104,83 @@ final class TaskController extends Controller
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks');
     }
 
+    public function edit(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks');
+        }
+        $task = $this->findTask($params['task'] ?? '');
+        $pid = PropertyContext::propertyId();
+        $this->view('tasks/edit', [
+            'title' => 'Editar tarea',
+            'property' => PropertyContext::property(),
+            'task' => $task,
+            'spaces' => Connection::fetchAll(
+                'SELECT id, name FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
+                ['pid' => $pid]
+            ),
+            'members' => Connection::fetchAll(
+                'SELECT id, display_name FROM property_members WHERE property_id = :pid AND status = \'active\' ORDER BY display_name',
+                ['pid' => $pid]
+            ),
+            'canEdit' => true,
+        ]);
+    }
+
+    public function update(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks');
+        }
+
+        $task = $this->findTask($params['task'] ?? '');
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|max:200',
+            'priority' => 'in:low,normal,high,urgent',
+            'status' => 'in:pending,in_progress,done,cancelled',
+        ]);
+        if ($validator->fails()) {
+            flash('error', $validator->firstError());
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks/' . $task['public_id'] . '/edit');
+        }
+
+        $status = (string) ($request->input('status') ?: $task['status']);
+        Connection::query(
+            'UPDATE tasks SET
+                title = :title,
+                description = :description,
+                priority = :priority,
+                status = :status,
+                due_date = :due_date,
+                space_id = :space_id,
+                assignee_member_id = :assignee_member_id,
+                tags = :tags,
+                completed_at = CASE WHEN :status2 = \'done\' THEN COALESCE(completed_at, NOW()) ELSE NULL END,
+                updated_at = NOW()
+             WHERE id = :id AND property_id = :pid',
+            [
+                'title' => (string) $request->input('title'),
+                'description' => $request->input('description'),
+                'priority' => (string) ($request->input('priority') ?: 'normal'),
+                'status' => $status,
+                'status2' => $status,
+                'due_date' => $request->input('due_date') ?: null,
+                'space_id' => $request->input('space_id') !== '' && $request->input('space_id') !== null
+                    ? (int) $request->input('space_id') : null,
+                'assignee_member_id' => $request->input('assignee_member_id') !== '' && $request->input('assignee_member_id') !== null
+                    ? (int) $request->input('assignee_member_id') : null,
+                'tags' => $request->input('tags'),
+                'id' => $task['id'],
+                'pid' => PropertyContext::propertyId(),
+            ]
+        );
+        ActivityLogger::log(PropertyContext::propertyId(), 'task', (int) $task['id'], 'updated');
+        flash('success', 'Tarea actualizada.');
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks');
+    }
+
     public function updateStatus(Request $request, array $params): never
     {
         if (!PropertyContext::canEdit()) {
@@ -161,7 +238,10 @@ final class TaskController extends Controller
             ['id' => $task['id']]
         );
         ActivityLogger::log(PropertyContext::propertyId(), 'task', (int) $task['id'], 'archived');
-        flash('success', 'Tarea archivada.');
+        flash('success', 'Tarea eliminada.');
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks');
     }
 

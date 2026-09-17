@@ -17,6 +17,13 @@ $pid = $property['public_id'];
             <label>Reportada <input type="date" name="reported_at" value="<?= e(date('Y-m-d')) ?>" required></label>
             <label>Proveedor <input name="provider_name"></label>
             <label>Presupuesto <input type="number" step="0.01" name="budget"></label>
+            <label>Estado
+                <select name="status">
+                    <?php foreach (($statuses ?? ['pendiente' => 'Pendiente', 'en_curso' => 'En curso', 'hecho' => 'Hecho', 'cancelada' => 'Cancelada']) as $value => $label): ?>
+                        <option value="<?= e($value) ?>" <?= $value === 'pendiente' ? 'selected' : '' ?>><?= e($label) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
             <label>Espacio
                 <select name="space_id"><option value="">—</option>
                     <?php foreach ($spaces as $s): ?><option value="<?= (int)$s['id'] ?>"><?= e($s['name']) ?></option><?php endforeach; ?>

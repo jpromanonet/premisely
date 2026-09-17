@@ -87,6 +87,7 @@ final class PlanningController extends Controller
             'days' => $days,
             'prev' => $start->sub(new DateInterval('P7D'))->format('Y-m-d'),
             'next' => $start->add(new DateInterval('P7D'))->format('Y-m-d'),
+            'canEdit' => PropertyContext::canEdit(),
         ]);
     }
 

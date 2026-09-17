@@ -34,9 +34,10 @@ $next = date('Y-m-d', strtotime($weekStart . ' +7 days'));
                     <span class="badge badge-info"><?= e($meal['slot']) ?></span>
                     <?= e($meal['title']) ?>
                     <?php if (!empty($canEdit)): ?>
-                    <form method="post" action="<?= e(url('/properties/' . $pid . '/meals/' . $meal['public_id'] . '/delete')) ?>" style="display:inline">
+                    <a class="btn btn--ghost btn--sm" href="<?= e(url('/properties/' . $pid . '/meals/' . $meal['public_id'] . '/edit')) ?>">Editar</a>
+                    <form method="post" action="<?= e(url('/properties/' . $pid . '/meals/' . $meal['public_id'] . '/delete')) ?>" style="display:inline" onsubmit="return confirm('¿Eliminar esta comida?');">
                         <?= csrf_field() ?>
-                        <button class="btn btn-danger btn--sm" type="submit">×</button>
+                        <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
                     </form>
                     <?php endif; ?>
                 </li>

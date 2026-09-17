@@ -112,6 +112,102 @@ final class RoutineController extends Controller
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/routines');
     }
 
+    public function edit(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect($this->routineListPath($request));
+        }
+        $routine = $this->findRoutine($params['routine'] ?? '');
+        $pid = PropertyContext::propertyId();
+        $this->view('routines/edit', [
+            'title' => 'Editar rutina',
+            'heading' => 'Editar rutina',
+            'property' => PropertyContext::property(),
+            'routine' => $routine,
+            'spaces' => Connection::fetchAll(
+                'SELECT id, name FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
+                ['pid' => $pid]
+            ),
+            'members' => Connection::fetchAll(
+                'SELECT id, display_name FROM property_members WHERE property_id = :pid AND status = \'active\' ORDER BY display_name',
+                ['pid' => $pid]
+            ),
+            'listPath' => '/properties/' . PropertyContext::property()['public_id'] . '/routines',
+            'formAction' => '/properties/' . PropertyContext::property()['public_id'] . '/routines/' . $routine['public_id'],
+            'canEdit' => true,
+        ]);
+    }
+
+    public function update(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect($this->routineListPath($request));
+        }
+
+        $routine = $this->findRoutine($params['routine'] ?? '');
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|max:200',
+            'frequency_type' => 'required|in:daily,weekly,monthly,yearly',
+        ]);
+        if ($validator->fails()) {
+            flash('error', $validator->firstError());
+            $cat = (string) ($request->input('category') ?: $routine['category']);
+            $pub = PropertyContext::property()['public_id'];
+            $editBase = match ($cat) {
+                'cleaning' => '/properties/' . $pub . '/cleaning/',
+                'laundry' => '/properties/' . $pub . '/laundry/',
+                default => '/properties/' . $pub . '/routines/',
+            };
+            $this->redirect($editBase . $routine['public_id'] . '/edit');
+        }
+
+        $interval = max(1, (int) ($request->input('frequency_interval') ?: 1));
+        $nextRaw = trim((string) $request->input('next_due_at', ''));
+        if ($nextRaw !== '') {
+            $nextDue = str_replace('T', ' ', $nextRaw);
+            if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $nextDue)) {
+                $nextDue .= ':00';
+            }
+        } else {
+            $nextDue = $routine['next_due_at'];
+        }
+
+        Connection::query(
+            'UPDATE routines SET
+                title = :title,
+                description = :description,
+                category = :category,
+                frequency_type = :frequency_type,
+                frequency_interval = :frequency_interval,
+                next_due_at = :next_due_at,
+                space_id = :space_id,
+                assignee_member_id = :assignee_member_id,
+                is_active = :is_active,
+                updated_at = NOW()
+             WHERE id = :id AND property_id = :pid',
+            [
+                'title' => (string) $request->input('title'),
+                'description' => $request->input('description'),
+                'category' => (string) ($request->input('category') ?: $routine['category']),
+                'frequency_type' => (string) $request->input('frequency_type'),
+                'frequency_interval' => $interval,
+                'next_due_at' => $nextDue ?: null,
+                'space_id' => $request->input('space_id') !== '' && $request->input('space_id') !== null
+                    ? (int) $request->input('space_id') : null,
+                'assignee_member_id' => $request->input('assignee_member_id') !== '' && $request->input('assignee_member_id') !== null
+                    ? (int) $request->input('assignee_member_id') : null,
+                'is_active' => (int) $request->input('is_active', 1) === 1 ? 1 : 0,
+                'id' => $routine['id'],
+                'pid' => PropertyContext::propertyId(),
+            ]
+        );
+        ActivityLogger::log(PropertyContext::propertyId(), 'routine', (int) $routine['id'], 'updated');
+        flash('success', 'Rutina actualizada.');
+        $this->redirect($this->routineListPath($request, (string) ($request->input('category') ?: $routine['category'])));
+    }
+
     public function execute(Request $request, array $params): never
     {
         if (!PropertyContext::canEdit()) {
@@ -165,6 +261,55 @@ final class RoutineController extends Controller
             ?: '/properties/' . PropertyContext::property()['public_id'] . '/routines'
         );
         $this->redirect($redirect);
+    }
+
+    public function archive(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect($this->routineListPath($request));
+        }
+
+        $routine = $this->findRoutine($params['routine'] ?? '');
+        Connection::query(
+            'UPDATE routines SET archived_at = NOW(), is_active = 0, updated_at = NOW()
+             WHERE id = :id AND property_id = :pid',
+            ['id' => $routine['id'], 'pid' => PropertyContext::propertyId()]
+        );
+        ActivityLogger::log(PropertyContext::propertyId(), 'routine', (int) $routine['id'], 'archived');
+        flash('success', 'Rutina eliminada.');
+        $this->redirect($this->routineListPath($request, (string) ($routine['category'] ?? 'general')));
+    }
+
+    public function toggleActive(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect($this->routineListPath($request));
+        }
+
+        $routine = $this->findRoutine($params['routine'] ?? '');
+        $active = (int) $routine['is_active'] === 1 ? 0 : 1;
+        Connection::query(
+            'UPDATE routines SET is_active = :a, updated_at = NOW() WHERE id = :id AND property_id = :pid',
+            ['a' => $active, 'id' => $routine['id'], 'pid' => PropertyContext::propertyId()]
+        );
+        ActivityLogger::log(PropertyContext::propertyId(), 'routine', (int) $routine['id'], $active ? 'activated' : 'paused');
+        flash('success', $active ? 'Rutina activada.' : 'Rutina pausada.');
+        $this->redirect($this->routineListPath($request, (string) ($routine['category'] ?? 'general')));
+    }
+
+    private function routineListPath(Request $request, string $category = 'general'): string
+    {
+        $pid = PropertyContext::property()['public_id'];
+        if ($request->input('redirect')) {
+            return (string) $request->input('redirect');
+        }
+        return match ($category) {
+            'cleaning' => '/properties/' . $pid . '/cleaning',
+            'laundry' => '/properties/' . $pid . '/laundry',
+            default => '/properties/' . $pid . '/routines',
+        };
     }
 
     public function computeNextDue(string $type, int $interval, DateTimeImmutable $from): DateTimeImmutable

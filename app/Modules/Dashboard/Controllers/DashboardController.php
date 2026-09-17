@@ -97,7 +97,7 @@ final class DashboardController extends Controller
                 ['pid' => $pid]
             ),
             'open_repairs' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM repair_records WHERE property_id = :pid AND archived_at IS NULL AND status != \'closed\'',
+                'SELECT COUNT(*) FROM repair_records WHERE property_id = :pid AND archived_at IS NULL AND status IN (\'pendiente\', \'en_curso\', \'open\', \'in_progress\')',
                 ['pid' => $pid]
             ),
             'month_expenses' => (float) (Connection::fetchColumn(

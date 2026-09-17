@@ -78,9 +78,67 @@ final class LaundryController extends Controller
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/laundry');
     }
 
+    public function edit(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/laundry');
+        }
+        $routine = Connection::fetch(
+            'SELECT * FROM routines
+             WHERE property_id = :pid AND category = \'laundry\' AND archived_at IS NULL
+               AND (public_id = :key OR id = :id) LIMIT 1',
+            [
+                'pid' => PropertyContext::propertyId(),
+                'key' => $params['routine'] ?? '',
+                'id' => ctype_digit((string) ($params['routine'] ?? '')) ? (int) $params['routine'] : 0,
+            ]
+        );
+        if (!$routine) {
+            flash('error', 'Tarea no encontrada.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/laundry');
+        }
+        $pid = PropertyContext::propertyId();
+        $prop = PropertyContext::property()['public_id'];
+        $this->view('routines/edit', [
+            'title' => 'Editar lavandería',
+            'heading' => 'Editar tarea de lavandería',
+            'property' => PropertyContext::property(),
+            'routine' => $routine,
+            'spaces' => Connection::fetchAll(
+                'SELECT id, name FROM spaces WHERE property_id = :p AND archived_at IS NULL ORDER BY name',
+                ['p' => $pid]
+            ),
+            'members' => [],
+            'listPath' => '/properties/' . $prop . '/laundry',
+            'formAction' => '/properties/' . $prop . '/laundry/' . $routine['public_id'],
+            'fixedCategory' => 'laundry',
+            'canEdit' => true,
+        ]);
+    }
+
+    public function update(Request $request, array $params): never
+    {
+        $_POST['category'] = 'laundry';
+        $_POST['redirect'] = '/properties/' . PropertyContext::property()['public_id'] . '/laundry';
+        (new RoutineController())->update(Request::capture(), $params);
+    }
+
     public function execute(Request $request, array $params): never
     {
         $_POST['redirect'] = '/properties/' . PropertyContext::property()['public_id'] . '/laundry';
         (new RoutineController())->execute(Request::capture(), $params);
+    }
+
+    public function destroy(Request $request, array $params): never
+    {
+        $_POST['redirect'] = '/properties/' . PropertyContext::property()['public_id'] . '/laundry';
+        (new RoutineController())->archive(Request::capture(), $params);
+    }
+
+    public function toggle(Request $request, array $params): never
+    {
+        $_POST['redirect'] = '/properties/' . PropertyContext::property()['public_id'] . '/laundry';
+        (new RoutineController())->toggleActive(Request::capture(), $params);
     }
 }

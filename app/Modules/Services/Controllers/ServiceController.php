@@ -113,6 +113,69 @@ final class ServiceController extends Controller
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
     }
 
+    public function edit(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+        }
+        $service = $this->findService($params['service'] ?? '');
+        $this->view('services/edit', [
+            'title' => 'Editar servicio',
+            'property' => PropertyContext::property(),
+            'service' => $service,
+            'canEdit' => true,
+        ]);
+    }
+
+    public function update(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+        }
+        $service = $this->findService($params['service'] ?? '');
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|max:160',
+        ]);
+        if ($validator->fails()) {
+            flash('error', $validator->firstError());
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services/' . $service['public_id'] . '/edit');
+        }
+        $status = (string) ($request->input('status') ?: 'active');
+        if (!in_array($status, ['active', 'paused', 'cancelled'], true)) {
+            $status = 'active';
+        }
+        Connection::query(
+            'UPDATE property_services SET
+                name = :name,
+                provider = :provider,
+                customer_number = :customer_number,
+                billing_frequency = :billing_frequency,
+                typical_amount = :typical_amount,
+                next_due_date = :next_due_date,
+                status = :status,
+                notes = :notes,
+                updated_at = NOW()
+             WHERE id = :id AND property_id = :pid',
+            [
+                'name' => (string) $request->input('name'),
+                'provider' => $request->input('provider'),
+                'customer_number' => $request->input('customer_number'),
+                'billing_frequency' => (string) ($request->input('billing_frequency') ?: 'monthly'),
+                'typical_amount' => $request->input('typical_amount') !== '' ? $request->input('typical_amount') : null,
+                'next_due_date' => $request->input('next_due_date') ?: null,
+                'status' => $status,
+                'notes' => $request->input('notes'),
+                'id' => $service['id'],
+                'pid' => PropertyContext::propertyId(),
+            ]
+        );
+        ActivityLogger::log(PropertyContext::propertyId(), 'property_service', (int) $service['id'], 'updated');
+        flash('success', 'Servicio actualizado.');
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+    }
+
     public function addBill(Request $request, array $params): never
     {
         if (!PropertyContext::canEdit()) {
@@ -177,6 +240,84 @@ final class ServiceController extends Controller
         }
 
         flash('success', 'Factura registrada.');
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+    }
+
+    public function updateStatus(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+        }
+
+        $service = $this->findService($params['service'] ?? '');
+        $status = (string) $request->input('status', 'active');
+        if (!in_array($status, ['active', 'paused', 'cancelled'], true)) {
+            flash('error', 'Estado inválido.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+        }
+
+        Connection::query(
+            'UPDATE property_services SET status = :status, updated_at = NOW()
+             WHERE id = :id AND property_id = :pid',
+            [
+                'status' => $status,
+                'id' => $service['id'],
+                'pid' => PropertyContext::propertyId(),
+            ]
+        );
+        ActivityLogger::log(PropertyContext::propertyId(), 'property_service', (int) $service['id'], 'status_updated');
+        flash('success', 'Estado del servicio actualizado.');
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+    }
+
+    public function destroy(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+        }
+
+        $service = $this->findService($params['service'] ?? '');
+        Connection::query(
+            'UPDATE property_services SET archived_at = NOW(), status = \'cancelled\', updated_at = NOW()
+             WHERE id = :id AND property_id = :pid',
+            ['id' => $service['id'], 'pid' => PropertyContext::propertyId()]
+        );
+        ActivityLogger::log(PropertyContext::propertyId(), 'property_service', (int) $service['id'], 'archived');
+        flash('success', 'Servicio eliminado.');
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+    }
+
+    public function destroyBill(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+        }
+
+        $key = (string) ($params['bill'] ?? '');
+        $bill = Connection::fetch(
+            'SELECT * FROM service_bills
+             WHERE property_id = :pid AND (public_id = :key OR id = :id)
+             LIMIT 1',
+            [
+                'pid' => PropertyContext::propertyId(),
+                'key' => $key,
+                'id' => ctype_digit($key) ? (int) $key : 0,
+            ]
+        );
+        if (!$bill) {
+            flash('error', 'Factura no encontrada.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
+        }
+
+        Connection::query(
+            'DELETE FROM service_bills WHERE id = :id AND property_id = :pid',
+            ['id' => $bill['id'], 'pid' => PropertyContext::propertyId()]
+        );
+        ActivityLogger::log(PropertyContext::propertyId(), 'service_bill', (int) $bill['id'], 'deleted');
+        flash('success', 'Factura eliminada.');
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/services');
     }
 

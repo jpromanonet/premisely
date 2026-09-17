@@ -26,6 +26,14 @@ $pid = $property['public_id'];
             <li style="padding:.4rem 0;border-bottom:1px solid var(--line)">
                 <span class="badge badge-info"><?= e($ev['type']) ?></span>
                 <?= e($ev['title']) ?>
+                <?php if (!empty($canEdit) && ($ev['type'] ?? '') === 'note' && !empty($ev['public_id'])): ?>
+                    <a class="btn btn--ghost btn--sm" href="<?= e(url('/properties/' . $pid . '/calendar/notes/' . $ev['public_id'] . '/edit')) ?>">Editar</a>
+                    <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/notes/' . $ev['public_id'] . '/delete')) ?>" style="display:inline" onsubmit="return confirm('¿Eliminar esta nota?');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="month" value="<?= e($month) ?>">
+                        <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
+                    </form>
+                <?php endif; ?>
             </li>
         <?php endforeach; ?>
         </ul>
