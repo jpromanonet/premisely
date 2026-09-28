@@ -61,6 +61,33 @@ if (PHP_SAPI !== 'cli') {
     $secure = (bool) ($config['security']['session_secure'] ?? false);
 
     if (session_status() !== PHP_SESSION_ACTIVE) {
+        $lifetime = max(86400, $lifetime);
+        $sessDir = $root . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'sessions';
+        if (!is_dir($sessDir)) {
+            @mkdir($sessDir, 0777, true);
+        }
+        $savePath = null;
+        if (is_dir($sessDir)) {
+            @chmod($sessDir, 0777);
+            $probe = $sessDir . DIRECTORY_SEPARATOR . '.write';
+            if (@file_put_contents($probe, '1') !== false) {
+                @unlink($probe);
+                $savePath = $sessDir;
+            }
+        }
+        if ($savePath === null) {
+            $fallback = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'premisely_sessions';
+            if (!is_dir($fallback)) {
+                @mkdir($fallback, 0777, true);
+            }
+            if (is_dir($fallback)) {
+                $savePath = $fallback;
+            }
+        }
+        if ($savePath !== null) {
+            session_save_path($savePath);
+        }
+        ini_set('session.cookie_lifetime', (string) $lifetime);
         ini_set('session.gc_maxlifetime', (string) $lifetime);
         session_name($sessionName);
         session_set_cookie_params([
