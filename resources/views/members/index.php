@@ -44,7 +44,7 @@ $statusLabels = [
                     <td>
                         <div class="member-cell">
                             <?php if (!empty($m['avatar_path']) && !empty($m['user_public_id'])): ?>
-                                <span class="avatar avatar--img"><img src="<?= e(url('/avatars/' . $m['user_public_id'])) ?>" alt=""></span>
+                                <span class="avatar avatar--img" style="background-image:url('<?= e(url('/avatars/' . $m['user_public_id'])) ?>')"></span>
                             <?php elseif (!empty($m['display_name'])): ?>
                                 <?php
                                 $parts = preg_split('/\s+/', trim((string) $m['display_name'])) ?: [];

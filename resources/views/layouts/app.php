@@ -115,7 +115,7 @@ $isActive = static function (string $needle) use ($currentPath): bool {
             <div class="topbar__actions">
                 <a class="user-chip" href="<?= e(url('/settings/profile')) ?>">
                     <?php if (!empty($user['avatar_path']) && !empty($user['public_id'])): ?>
-                        <span class="avatar avatar--img"><img src="<?= e(url('/avatars/' . $user['public_id'])) ?>" alt=""></span>
+                        <span class="avatar avatar--img" style="background-image:url('<?= e(url('/avatars/' . $user['public_id'])) ?>')" role="img" aria-label=""></span>
                     <?php else: ?>
                         <span class="avatar"><?= e($initials !== '' ? $initials : 'P') ?></span>
                     <?php endif; ?>

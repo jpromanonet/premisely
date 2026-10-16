@@ -22,7 +22,7 @@ if (!empty($user['name'])) {
 
         <div class="profile-avatar-row">
             <?php if ($hasAvatar): ?>
-                <span class="avatar avatar--lg avatar--img"><img src="<?= e($avatarUrl) ?>" alt=""></span>
+                <span class="avatar avatar--lg avatar--img" style="background-image:url('<?= e($avatarUrl) ?>')" role="img" aria-label="Foto de perfil"></span>
             <?php else: ?>
                 <span class="avatar avatar--lg"><?= e($initials !== '' ? $initials : 'P') ?></span>
             <?php endif; ?>

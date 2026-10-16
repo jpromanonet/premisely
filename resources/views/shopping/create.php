@@ -15,21 +15,7 @@ $pid = $property['public_id'];
         <div class="form-grid">
             <label>Nombre <input name="name" required></label>
             <label>Cantidad <input type="number" step="0.001" name="quantity" value="1"></label>
-            <label>Unidad <input name="unit" value="u"></label>
-            <label>Precio estimado <input type="number" step="0.01" name="estimated_price"></label>
-            <label>Stock relacionado
-                <select name="stock_item_id">
-                    <option value="">—</option>
-                    <?php foreach ($stockItems as $s): ?>
-                        <option value="<?= (int)$s['id'] ?>"><?= e($s['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
-            <label>Prioridad
-                <select name="priority">
-                    <?php foreach (['low','normal','high'] as $p): ?><option value="<?= $p ?>"><?= $p ?></option><?php endforeach; ?>
-                </select>
-            </label>
+            <label>Unidad <input name="unit" value="u" placeholder="kg, u, paquete"></label>
         </div>
         <div class="actions">
             <button class="btn" type="submit">Agregar</button>

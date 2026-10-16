@@ -229,9 +229,12 @@ h1, h2, h3, .brand-wordmark, .display {
 .avatar {
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 50%;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: var(--warm-sand);
   color: var(--plum-ink);
   font-weight: 700;
@@ -239,34 +242,48 @@ h1, h2, h3, .brand-wordmark, .display {
   border: 1px solid var(--line);
   overflow: hidden;
   flex-shrink: 0;
-  position: relative;
   box-sizing: border-box;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 .avatar--lg {
   width: 88px;
   height: 88px;
   min-width: 88px;
   min-height: 88px;
-  max-width: 88px;
-  max-height: 88px;
   font-size: 1.65rem;
 }
 .avatar--img {
   padding: 0;
-  background: var(--line);
-  display: block;
+  background-color: var(--line);
 }
-.avatar img,
-.avatar--img img {
-  position: absolute;
-  inset: 0;
-  width: 100% !important;
-  height: 100% !important;
-  max-width: none !important;
-  object-fit: cover;
-  object-position: center;
-  display: block;
-  border-radius: 50%;
+.shopping-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.shopping-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.shopping-list li:last-child { border-bottom: 0; }
+.shopping-list li.is-done {
+  opacity: 0.55;
+}
+.shopping-list li.is-done .shopping-list__name {
+  text-decoration: line-through;
+}
+.shopping-list__name {
+  font-weight: 650;
+}
+.shopping-list__qty {
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 .profile-avatar-row {
   display: flex;
@@ -295,6 +312,8 @@ h1, h2, h3, .brand-wordmark, .display {
 .member-cell .avatar {
   width: 32px;
   height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   font-size: 0.75rem;
 }
 .members-table td {

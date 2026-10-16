@@ -49,6 +49,36 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   initSortableTables();
+
+  document.querySelectorAll('[data-copy-source]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const source = document.getElementById(button.getAttribute('data-copy-source') || '');
+      if (!source) {
+        return;
+      }
+      let text = source.textContent || '';
+      try {
+        text = JSON.parse(text);
+      } catch (error) {
+        text = source.textContent || '';
+      }
+      try {
+        await navigator.clipboard.writeText(String(text));
+      } catch (error) {
+        const area = document.createElement('textarea');
+        area.value = String(text);
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand('copy');
+        area.remove();
+      }
+      const previous = button.textContent;
+      button.textContent = 'Copiado';
+      window.setTimeout(() => {
+        button.textContent = previous;
+      }, 1600);
+    });
+  });
 });
 
 function initSortableTables() {
