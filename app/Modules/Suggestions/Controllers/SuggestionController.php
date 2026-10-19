@@ -17,21 +17,6 @@ final class SuggestionController extends Controller
         $pub = (string) PropertyContext::property()['public_id'];
         $suggestions = [];
 
-        $low = Connection::fetchAll(
-            'SELECT public_id, name, quantity, unit, minimum_quantity FROM stock_items
-             WHERE property_id = :p AND archived_at IS NULL AND quantity <= minimum_quantity
-             ORDER BY name LIMIT 20',
-            ['p' => $pid]
-        );
-        foreach ($low as $item) {
-            $suggestions[] = [
-                'type' => 'stock_low',
-                'title' => 'Reponer ' . $item['name'],
-                'detail' => $item['quantity'] . ' ' . $item['unit'] . ' (mín. ' . $item['minimum_quantity'] . ')',
-                'href' => url('/properties/' . $pub . '/shopping'),
-            ];
-        }
-
         $warranties = Connection::fetchAll(
             'SELECT i.public_id, i.name, w.ends_on FROM inventory_item_warranties w
              INNER JOIN inventory_items i ON i.id = w.inventory_item_id

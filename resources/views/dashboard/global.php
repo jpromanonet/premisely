@@ -1,7 +1,7 @@
 <div class="grid" style="margin-bottom:1.2rem">
   <div class="panel"><div class="muted">Propiedades</div><div class="stat-value"><?= (int) $stats['properties'] ?></div></div>
   <div class="panel"><div class="muted">Tareas vencidas</div><div class="stat-value"><?= (int) $stats['tasks_overdue'] ?></div></div>
-  <div class="panel"><div class="muted">Stock bajo</div><div class="stat-value"><?= (int) $stats['low_stock'] ?></div></div>
+  <div class="panel"><div class="muted">En cero</div><div class="stat-value"><?= (int) $stats['low_stock'] ?></div></div>
   <div class="panel"><div class="muted">Valor inventario</div><div class="stat-value"><?= e(number_format((float) $stats['inventory_value'], 0, ',', '.')) ?></div></div>
 </div>
 <div class="form-actions" style="margin-bottom:1rem">

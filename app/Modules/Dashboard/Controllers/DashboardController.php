@@ -9,6 +9,7 @@ use Premisely\Core\Database\Connection;
 use Premisely\Core\Http\Controller;
 use Premisely\Core\Http\Request;
 use Premisely\Modules\Routines\Controllers\RoutineController;
+use Premisely\Modules\Stock\Services\StockService;
 use Premisely\Shared\PropertyContext;
 
 final class DashboardController extends Controller
@@ -36,7 +37,7 @@ final class DashboardController extends Controller
             );
             $lowStock = (int) Connection::fetchColumn(
                 "SELECT COUNT(*) FROM stock_items
-                 WHERE property_id IN ($in) AND archived_at IS NULL AND quantity <= minimum_quantity"
+                 WHERE property_id IN ($in) AND archived_at IS NULL AND quantity <= 0"
             );
             $upcomingRoutines = (int) Connection::fetchColumn(
                 "SELECT COUNT(*) FROM routines
@@ -92,6 +93,8 @@ final class DashboardController extends Controller
             }
         }
 
+        (new StockService())->syncAllWithShopping($pid);
+
         $this->view('dashboard/property', [
             'title' => 'Panel · ' . $property['name'],
             'property' => $property,
@@ -108,8 +111,7 @@ final class DashboardController extends Controller
             ),
             'lowStock' => (int) Connection::fetchColumn(
                 'SELECT COUNT(*) FROM stock_items
-                 WHERE property_id = :pid AND archived_at IS NULL
-                   AND minimum_quantity > 0 AND quantity <= minimum_quantity',
+                 WHERE property_id = :pid AND archived_at IS NULL AND quantity <= 0',
                 ['pid' => $pid]
             ),
             'inventory' => (int) Connection::fetchColumn(

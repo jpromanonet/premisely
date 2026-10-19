@@ -42,21 +42,21 @@ foreach ($groupOrder as $key) {
 
 <nav class="rubro-filters">
     <select class="rubro-select" aria-label="Rubro" onchange="if (this.value) location.href = this.value">
-        <option value="<?= e(url('/properties/' . $pid . '/shopping')) ?>" <?= $rubro === '' ? 'selected' : '' ?>>Todos</option>
+        <option value="<?= e(url('/properties/' . $pid . '/shopping')) ?>" <?= $rubro === '' ? 'selected' : '' ?>>Todos (<?= count($items) ?>)</option>
         <?php foreach ($rubros as $key => $label): ?>
-            <option value="<?= e(url('/properties/' . $pid . '/shopping', ['rubro' => $key])) ?>" <?= $rubro === $key ? 'selected' : '' ?>><?= e($label) ?></option>
+            <option value="<?= e(url('/properties/' . $pid . '/shopping', ['rubro' => $key])) ?>" <?= $rubro === $key ? 'selected' : '' ?>><?= e($label) ?> (<?= count($groups[$key] ?? []) ?>)</option>
         <?php endforeach; ?>
         <?php if (($groups['sin'] ?? []) !== [] || $rubro === 'sin'): ?>
-            <option value="<?= e(url('/properties/' . $pid . '/shopping', ['rubro' => 'sin'])) ?>" <?= $rubro === 'sin' ? 'selected' : '' ?>>Sin rubro</option>
+            <option value="<?= e(url('/properties/' . $pid . '/shopping', ['rubro' => 'sin'])) ?>" <?= $rubro === 'sin' ? 'selected' : '' ?>>Sin rubro (<?= count($groups['sin'] ?? []) ?>)</option>
         <?php endif; ?>
     </select>
-    <a class="<?= $rubro === '' ? 'is-on' : '' ?>" href="<?= e(url('/properties/' . $pid . '/shopping')) ?>">Todos</a>
+    <a class="<?= $rubro === '' ? 'is-on' : '' ?>" href="<?= e(url('/properties/' . $pid . '/shopping')) ?>">Todos <span class="rubro-n">(<?= count($items) ?>)</span></a>
     <?php foreach ($rubros as $key => $label): ?>
         <?php $tone = $palette[$key] ?? $palette['sin']; ?>
-        <a class="<?= $rubro === $key ? 'is-on' : '' ?>" href="<?= e(url('/properties/' . $pid . '/shopping', ['rubro' => $key])) ?>"><i style="--dot:#<?= e($tone['bg']) ?>"></i><?= e($label) ?></a>
+        <a class="<?= $rubro === $key ? 'is-on' : '' ?>" href="<?= e(url('/properties/' . $pid . '/shopping', ['rubro' => $key])) ?>"><i style="--dot:#<?= e($tone['bg']) ?>"></i><?= e($label) ?> <span class="rubro-n">(<?= count($groups[$key] ?? []) ?>)</span></a>
     <?php endforeach; ?>
     <?php if (($groups['sin'] ?? []) !== [] || $rubro === 'sin'): ?>
-        <a class="<?= $rubro === 'sin' ? 'is-on' : '' ?>" href="<?= e(url('/properties/' . $pid . '/shopping', ['rubro' => 'sin'])) ?>"><i style="--dot:#<?= e($palette['sin']['bg']) ?>"></i>Sin rubro</a>
+        <a class="<?= $rubro === 'sin' ? 'is-on' : '' ?>" href="<?= e(url('/properties/' . $pid . '/shopping', ['rubro' => 'sin'])) ?>"><i style="--dot:#<?= e($palette['sin']['bg']) ?>"></i>Sin rubro <span class="rubro-n">(<?= count($groups['sin'] ?? []) ?>)</span></a>
     <?php endif; ?>
 </nav>
 
@@ -71,7 +71,7 @@ foreach ($groupOrder as $key) {
     <?php if (($groups[$key] ?? []) === []) { continue; } ?>
     <?php $tone = $palette[$key] ?? $palette['sin']; ?>
     <section class="stock-group" style="--rubro:#<?= e($tone['bg']) ?>;--rubro-ink:#<?= e($tone['ink']) ?>">
-        <h2 class="rubro-cut"><?= $key === 'sin' ? 'Sin rubro' : e($rubros[$key]) ?></h2>
+        <h2 class="rubro-cut"><?= $key === 'sin' ? 'Sin rubro' : e($rubros[$key]) ?> <span class="rubro-n">(<?= count($groups[$key]) ?>)</span></h2>
         <?php foreach ($groups[$key] as $item): ?>
             <?php $qty = (float) ($item['quantity'] ?? 0); ?>
             <article class="stock-item" id="item-<?= (int) $item['id'] ?>">

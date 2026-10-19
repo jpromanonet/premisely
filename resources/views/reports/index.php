@@ -55,7 +55,7 @@ $stockTotal = max(1, (int) $stock['count']);
         <p><?= e($currency) ?> <?= e(format_money($inventory['value'])) ?></p>
     </div>
     <div class="metric">
-        <span>Para reponer</span>
+        <span>En cero</span>
         <strong><?= (int) $stock['low'] ?></strong>
         <p>de <?= (int) $stock['count'] ?> en stock</p>
     </div>
@@ -141,8 +141,8 @@ $stockTotal = max(1, (int) $stock['count']);
             <span class="is-low" style="width: <?= (int) round((int) $stock['low'] / $stockTotal * 100) ?>%"></span>
         </div>
         <p class="report-legend">
-            <i class="is-ok"></i> <?= $stockOk ?> bien
-            <i class="is-low"></i> <?= (int) $stock['low'] ?> para reponer
+            <i class="is-ok"></i> <?= $stockOk ?> con stock
+            <i class="is-low"></i> <?= (int) $stock['low'] ?> en cero
             <i style="background:#3D7A9A"></i> <?= (int) $shopping ?> en compras
         </p>
     </section>

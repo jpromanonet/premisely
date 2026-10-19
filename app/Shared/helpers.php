@@ -322,6 +322,22 @@ if (!function_exists('format_money')) {
     }
 }
 
+if (!function_exists('format_when')) {
+    function format_when(mixed $value): string
+    {
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return '';
+        }
+        $ts = strtotime($raw);
+        if ($ts === false) {
+            return '';
+        }
+
+        return date('j/n', $ts) . ' a las ' . date('H:i', $ts);
+    }
+}
+
 if (!function_exists('unit_label')) {
     function unit_label(mixed $quantity, ?string $unit): string
     {

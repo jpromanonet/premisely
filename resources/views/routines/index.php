@@ -61,16 +61,18 @@ require view_path('routines/_quests.php');
                     <strong><?= e((string) $habit['title']) ?></strong>
                 </div>
                 <?php if (!empty($canEdit)): ?>
-                    <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/toggle')) ?>">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                        <button class="btn btn--ghost btn--sm" type="submit">Activar</button>
-                    </form>
-                    <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este hábito?');">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                        <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
-                    </form>
+                    <div class="quest-tools">
+                        <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/toggle')) ?>">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                            <button class="btn btn--ghost btn--sm" type="submit">Activar</button>
+                        </form>
+                        <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este hábito?');">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                            <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
+                        </form>
+                    </div>
                 <?php endif; ?>
             </article>
         <?php endforeach; ?>

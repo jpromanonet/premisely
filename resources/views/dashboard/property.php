@@ -67,7 +67,7 @@ $currentMonth = date('Y-m');
 <h2 class="section-label">Métricas</h2>
 <div class="metric-grid">
     <a class="metric" href="<?= e(url('/properties/' . $pid . '/stock')) ?>">
-        <span>Para reponer</span>
+        <span>En cero</span>
         <strong><?= (int) $lowStock ?></strong>
     </a>
     <a class="metric" href="<?= e(url('/properties/' . $pid . '/shopping')) ?>">
@@ -137,7 +137,7 @@ $currentMonth = date('Y-m');
     </div>
     <p class="report-legend">
         <i class="is-ok"></i> <?= $stockOk ?> bien
-        <i class="is-low"></i> <?= (int) $lowStock ?> para reponer
+        <i class="is-low"></i> <?= (int) $lowStock ?> en cero
         <i style="background:#3D7A9A"></i> <?= (int) $shopping ?> en compras
     </p>
 </section>

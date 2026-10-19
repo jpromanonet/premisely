@@ -47,7 +47,7 @@ final class CalendarController extends Controller
         );
 
         $tasks = Connection::fetchAll(
-            'SELECT t.public_id, t.title, t.kind, t.status, t.priority, t.due_date,
+            'SELECT t.public_id, t.title, t.kind, t.status, t.priority, t.due_date, t.completed_at,
                     COALESCE(NULLIF(u.name, \'\'), m.display_name) AS assignee_name
              FROM tasks t
              LEFT JOIN property_members m ON m.id = t.assignee_member_id

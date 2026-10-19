@@ -86,6 +86,8 @@ $router->get('/properties/{property}/dashboard', [DashboardController::class, 'p
 $router->get('/properties/{property}/members', [MemberController::class, 'index'], $property);
 $router->get('/properties/{property}/members/create', [MemberController::class, 'create'], $property);
 $router->post('/properties/{property}/members', [MemberController::class, 'store'], $propertyCsrf);
+$router->get('/properties/{property}/members/{member}/access', [MemberController::class, 'access'], $property);
+$router->post('/properties/{property}/members/{member}/access', [MemberController::class, 'saveAccess'], $propertyCsrf);
 $router->post('/properties/{property}/members/leave', [MemberController::class, 'leave'], $propertyCsrf);
 $router->post('/properties/{property}/members/{member}', [MemberController::class, 'update'], $propertyCsrf);
 

@@ -12,12 +12,13 @@ $pid = $property['public_id'];
     <form method="post" action="<?= e(url('/properties/' . $pid . '/members')) ?>" class="stack">
         <?= csrf_field() ?>
         <div class="form-grid">
-            <label>Nombre visible <input name="display_name" required></label>
-            <label>Email <input type="email" name="email"></label>
+            <label>Nombre <input name="display_name" required></label>
+            <label>Email <input type="email" name="email" placeholder="Para poder entrar"></label>
+            <label>Contraseña <input type="text" name="password" minlength="8" autocomplete="off" placeholder="Mínimo 8, se la pasás vos"></label>
             <label>Rol
                 <select name="role">
-                    <?php foreach (['admin','member','collaborator','viewer'] as $r): ?>
-                        <option value="<?= $r ?>"><?= $r ?></option>
+                    <?php foreach (['member' => 'Integrante', 'admin' => 'Admin', 'collaborator' => 'Colaborador', 'viewer' => 'Solo ver'] as $value => $label): ?>
+                        <option value="<?= e($value) ?>"><?= e($label) ?></option>
                     <?php endforeach; ?>
                 </select>
             </label>

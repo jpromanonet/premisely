@@ -95,22 +95,26 @@ $when = static function (array $habit) use ($frequencies): string {
                 <?php if ($questNotes !== []): ?><p><?= e(implode(' · ', $questNotes)) ?></p><?php endif; ?>
             </div>
             <?php if ($manage && !empty($canEdit)): ?>
-                <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/frequency')) ?>">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                    <select class="quest-freq" name="frequency" aria-label="Frecuencia" onchange="this.form.submit()">
-                        <?php foreach ($frequencies as $value => $label): ?>
-                            <option value="<?= e($value) ?>" <?= $freqKey === $value ? 'selected' : '' ?>><?= e($label) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </form>
-                <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este hábito?');">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                    <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
-                </form>
+                <div class="quest-tools">
+                    <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/frequency')) ?>">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                        <select class="quest-freq" name="frequency" aria-label="Frecuencia" onchange="this.form.submit()">
+                            <?php foreach ($frequencies as $value => $label): ?>
+                                <option value="<?= e($value) ?>" <?= $freqKey === $value ? 'selected' : '' ?>><?= e($label) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </form>
+                    <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este hábito?');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                        <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
+                    </form>
+                </div>
             <?php elseif (!empty($canEdit)): ?>
-                <a class="quest-edit" href="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/edit')) ?>">Editar</a>
+                <div class="quest-tools">
+                    <a class="quest-edit" href="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/edit')) ?>">Editar</a>
+                </div>
             <?php endif; ?>
         </article>
     <?php endforeach; ?>

@@ -12,7 +12,7 @@ use Premisely\Modules\Stock\Services\StockService;
 final class AutomationRunner
 {
     public const TYPES = [
-        'stock_low_to_shopping' => 'Stock bajo → lista de compras',
+        'stock_low_to_shopping' => 'En cero → lista de compras',
         'warranty_soon_notify' => 'Garantía por vencer → notificación',
         'service_soon_notify' => 'Servicio por vencer → notificación',
         'maintenance_complete_next_due' => 'Al registrar mantenimiento → recalcular próxima fecha',
@@ -147,7 +147,7 @@ final class AutomationRunner
     {
         $items = Connection::fetchAll(
             'SELECT * FROM stock_items
-             WHERE property_id = :p AND archived_at IS NULL AND quantity <= minimum_quantity',
+             WHERE property_id = :p AND archived_at IS NULL AND quantity <= 0',
             ['p' => $propertyId]
         );
         $service = new StockService();
@@ -160,8 +160,8 @@ final class AutomationRunner
             NotificationService::notifyProperty(
                 $propertyId,
                 'stock_low',
-                'Stock bajo: ' . $n . ' producto(s)',
-                'Se agregaron a la lista de compras automáticamente.',
+                'En cero: ' . $n . ' producto(s)',
+                'Pasaron a la lista de compras.',
                 '/properties/' . $publicId . '/shopping'
             );
             (new WebhookService())->dispatch($propertyId, 'stock.low', ['count' => $n]);

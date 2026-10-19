@@ -55,7 +55,10 @@ $statusLabels = [
                             <span><?= e((string) $m['display_name']) ?></span>
                         </div>
                     </td>
-                    <td><?= e((string) ($m['email'] ?? '')) ?></td>
+                    <td>
+                        <?= e((string) ($m['email'] ?? '')) ?>
+                        <?php if (empty($m['user_id'])): ?><p class="muted">Sin usuario</p><?php endif; ?>
+                    </td>
                     <td>
                         <?php if ($editable): ?>
                             <select class="select-compact" form="<?= e($formId) ?>" name="role">
@@ -81,6 +84,7 @@ $statusLabels = [
                     <td class="members-table__actions">
                         <?php if ($editable): ?>
                             <button class="btn btn--sm" type="submit" form="<?= e($formId) ?>">Guardar</button>
+                            <a class="btn btn--ghost btn--sm" href="<?= e(url('/properties/' . $pid . '/members/' . $m['id'] . '/access')) ?>"><?= empty($m['user_id']) ? 'Crear usuario' : 'Cambiar clave' ?></a>
                         <?php endif; ?>
                     </td>
                 </tr>

@@ -29,7 +29,7 @@ final class ConsumptionController extends Controller
                AND m.created_at >= DATE_SUB(NOW(), INTERVAL {$days} DAY)
              WHERE s.property_id = :p AND s.archived_at IS NULL
              GROUP BY s.id, s.public_id, s.name, s.unit, s.quantity, s.minimum_quantity
-             HAVING consumed > 0 OR s.quantity <= s.minimum_quantity
+             HAVING consumed > 0 OR s.quantity <= 0
              ORDER BY consumed DESC
              LIMIT 100",
             ['p' => $pid]
@@ -40,8 +40,7 @@ final class ConsumptionController extends Controller
             $daily = $days > 0 ? $consumed / $days : 0;
             $row['daily_avg'] = round($daily, 3);
             $qty = (float) $row['quantity'];
-            $min = (float) $row['minimum_quantity'];
-            $row['days_to_min'] = $daily > 0 ? (int) floor(max(0, $qty - $min) / $daily) : null;
+            $row['days_to_min'] = $daily > 0 ? (int) floor(max(0, $qty) / $daily) : null;
         }
         unset($row);
 

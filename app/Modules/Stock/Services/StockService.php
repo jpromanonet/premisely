@@ -307,7 +307,7 @@ final class StockService
         return $row ? (int) $row['id'] : null;
     }
 
-    /** Pone en compras lo que llegó al mínimo y saca lo que ya está cubierto. */
+    /** Pone en compras lo que llegó a cero y saca lo que todavía hay. */
     public function syncAllWithShopping(int $propertyId): void
     {
         $items = Connection::fetchAll(
@@ -437,10 +437,7 @@ final class StockService
             $listId = (int) $list['id'];
         }
 
-        $target = $item['target_quantity'] !== null && $item['target_quantity'] !== ''
-            ? (float) $item['target_quantity']
-            : ((float) $item['minimum_quantity'] + 1);
-        $needed = max(1, $target - $currentQty);
+        $needed = 1;
         $existing = null;
         foreach (self::matchPending($this->pendingItems($propertyId), $item) as $row) {
             $existing = $row;
@@ -482,10 +479,7 @@ final class StockService
     {
         $needed = null;
         if ($refreshQuantity) {
-            $target = $item['target_quantity'] !== null && $item['target_quantity'] !== ''
-                ? (float) $item['target_quantity']
-                : ((float) $item['minimum_quantity'] + 1);
-            $needed = max(1, $target - (float) $item['quantity']);
+            $needed = 1;
         }
         $category = $this->shoppingCategory($item);
         foreach ($matches as $row) {
@@ -538,7 +532,7 @@ final class StockService
     /** @param array<string, mixed> $item */
     private static function isStocked(array $item): bool
     {
-        return (float) $item['quantity'] > (float) $item['minimum_quantity'];
+        return (float) $item['quantity'] > 0;
     }
 
     /** @return list<array<string, mixed>> */

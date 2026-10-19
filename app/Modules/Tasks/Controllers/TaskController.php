@@ -198,11 +198,16 @@ final class TaskController extends Controller
         Connection::query(
             'UPDATE tasks SET status = :status,
              completed_at = CASE WHEN :status2 = \'done\' THEN NOW() ELSE NULL END,
+             due_date = CASE
+               WHEN :status3 = \'done\' AND (kind IS NULL OR kind <> \'reparacion\') THEN CURDATE()
+               ELSE due_date
+             END,
              updated_at = NOW()
              WHERE id = :id',
             [
                 'status' => $status,
                 'status2' => $status,
+                'status3' => $status,
                 'id' => $task['id'],
             ]
         );
@@ -215,7 +220,7 @@ final class TaskController extends Controller
             $this->json(['ok' => true, 'status' => $status]);
         }
 
-        flash('success', 'Estado actualizado.');
+        flash('success', $status === 'done' ? 'Marcada como hecha.' : 'Estado actualizado.');
         if ($request->input('redirect')) {
             $this->redirect((string) $request->input('redirect'));
         }

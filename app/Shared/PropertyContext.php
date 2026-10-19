@@ -53,7 +53,8 @@ final class PropertyContext
              WHERE property_id = :p AND archived_at IS NULL
                AND status IN (\'pending\', \'in_progress\')
                AND (kind IS NULL OR kind <> \'reparacion\')
-               AND (due_date IS NULL OR due_date < :before)',
+               AND due_date IS NOT NULL
+               AND due_date < :before',
             ['today' => $today, 'before' => $today, 'p' => $pid]
         );
     }

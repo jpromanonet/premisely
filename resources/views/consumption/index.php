@@ -14,7 +14,7 @@ $pid = $property['public_id'];
 <section class="panel">
     <div class="table-wrap">
         <table>
-            <thead><tr><th>Producto</th><th>Stock</th><th>Consumido</th><th>Prom./día</th><th>Días a mínimo</th></tr></thead>
+            <thead><tr><th>Producto</th><th>Stock</th><th>Consumido</th><th>Prom./día</th><th>Días hasta cero</th></tr></thead>
             <tbody>
             <?php if ($rows === []): ?>
                 <tr><td colspan="5" class="muted">Sin datos de consumo en el período.</td></tr>

@@ -80,11 +80,27 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
                 <?php endforeach; ?>
             </div>
         <?php endforeach; ?>
-        <a class="btn btn--ghost btn--block" href="<?= e(url('/properties/' . $pid . '/routines')) ?>">Ver hábitos</a>
+        <?php if (!empty($canEdit)): ?>
+            <div class="month-card__adds">
+                <a class="btn btn--block btn--task" href="<?= e(url('/properties/' . $pid . '/tasks/create', ['kind' => 'tarea'])) ?>">+ Tarea</a>
+                <a class="btn btn--block btn--repair" href="<?= e(url('/properties/' . $pid . '/tasks/create', ['kind' => 'reparacion'])) ?>">+ Reparación</a>
+                <a class="btn btn--block btn--habit" href="<?= e(url('/properties/' . $pid . '/routines/create')) ?>">+ Hábito</a>
+                <a class="btn btn--block btn--note" href="<?= e(url('/properties/' . $pid . '/calendar/notes/create')) ?>">+ Nota</a>
+            </div>
+        <?php endif; ?>
     </aside>
 
     <div class="day-main">
-        <h2 class="section-label">Comidas</h2>
+        <h2 class="section-label section-label--meals">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 3v7a2 2 0 0 0 2 2h1v9"/>
+                <path d="M7 3v7"/>
+                <path d="M10 3v7"/>
+                <path d="M17 3v18"/>
+                <path d="M17 8h2a2 2 0 0 0 0-4h-2"/>
+            </svg>
+            Comidas
+        </h2>
         <div class="meal-row">
             <?php foreach ($slots as $slot => $label): ?>
                 <article class="meal-card meal-card--<?= e($slot) ?>">
@@ -118,14 +134,9 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
             <?php endforeach; ?>
         </div>
 
+        <section class="day-cut task-cut">
         <div class="section-head">
             <h2 class="section-label">Tareas del día</h2>
-            <?php if (!empty($canEdit)): ?>
-                <div class="actions section-actions">
-                    <a class="btn btn--sm" href="<?= e(url('/properties/' . $pid . '/tasks/create', ['kind' => 'tarea'])) ?>">+ Tarea</a>
-                    <a class="btn btn--ghost btn--sm" href="<?= e(url('/properties/' . $pid . '/tasks/create', ['kind' => 'reparacion'])) ?>">+ Reparación</a>
-                </div>
-            <?php endif; ?>
         </div>
         <div class="stack-cards">
             <?php if ($tasks === [] && ($day !== $today || $undated === [])): ?>
@@ -140,7 +151,9 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
                             Tarea
                             <?php if (!empty($task['assignee_name'])): ?> · <?= e((string) $task['assignee_name']) ?><?php endif; ?>
                             <?php if (!empty($task['priority']) && $task['priority'] !== 'normal'): ?> · <?= e($priorities[$task['priority']] ?? (string) $task['priority']) ?><?php endif; ?>
-                            <?php if ($done): ?> · Hecha<?php endif; ?>
+                            <?php if ($done): ?>
+                                · Hecha<?php $when = format_when($task['completed_at'] ?? ''); if ($when !== ''): ?> el <?= e($when) ?><?php endif; ?>
+                            <?php endif; ?>
                         </p>
                     </div>
                     <?php if (!empty($canEdit)): ?>
@@ -188,8 +201,9 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
+        </section>
 
-        <section class="repair-cut">
+        <section class="day-cut repair-cut">
             <div class="section-head">
                 <h2 class="section-label">Reparaciones</h2>
             </div>
@@ -245,41 +259,39 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
             </div>
         </section>
 
-        <div class="section-head">
-            <h2 class="section-label">Hábitos</h2>
-            <?php if (!empty($canEdit)): ?>
-                <a class="btn btn--ghost btn--sm" href="<?= e(url('/properties/' . $pid . '/routines/create')) ?>">+ Hábito</a>
-            <?php endif; ?>
-        </div>
-        <?php
-        $items = $habits;
-        $canToggle = !empty($canEdit) && $day === $today;
-        require view_path('routines/_quests.php');
-        ?>
+        <section class="day-cut habit-cut">
+            <div class="section-head">
+                <h2 class="section-label">Hábitos</h2>
+            </div>
+            <?php
+            $items = $habits;
+            $canToggle = !empty($canEdit) && $day === $today;
+            require view_path('routines/_quests.php');
+            ?>
+        </section>
 
-        <div class="section-head">
-            <h2 class="section-label">Notas</h2>
-            <?php if (!empty($canEdit)): ?>
-                <a class="btn btn--ghost btn--sm" href="<?= e(url('/properties/' . $pid . '/calendar/notes/create')) ?>">+ Nota</a>
-            <?php endif; ?>
-        </div>
-        <div class="stack-cards">
-            <?php if ($notes === []): ?><p class="empty-note">Sin notas.</p><?php endif; ?>
-            <?php foreach ($notes as $note): ?>
-                <article class="item-card">
-                    <div>
-                        <strong><?= e((string) $note['title']) ?></strong>
-                        <?php if (!empty($note['notes'])): ?><p class="muted"><?= e((string) $note['notes']) ?></p><?php endif; ?>
-                    </div>
-                    <?php if (!empty($canEdit)): ?>
-                        <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/notes/' . $note['public_id'] . '/delete')) ?>">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                            <button class="btn btn--ghost btn--sm" type="submit">Quitar</button>
-                        </form>
-                    <?php endif; ?>
-                </article>
-            <?php endforeach; ?>
-        </div>
+        <section class="day-cut note-cut">
+            <div class="section-head">
+                <h2 class="section-label">Notas</h2>
+            </div>
+            <div class="stack-cards">
+                <?php if ($notes === []): ?><p class="empty-note">Sin notas.</p><?php endif; ?>
+                <?php foreach ($notes as $note): ?>
+                    <article class="item-card">
+                        <div>
+                            <strong><?= e((string) $note['title']) ?></strong>
+                            <?php if (!empty($note['notes'])): ?><p class="muted"><?= e((string) $note['notes']) ?></p><?php endif; ?>
+                        </div>
+                        <?php if (!empty($canEdit)): ?>
+                            <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/notes/' . $note['public_id'] . '/delete')) ?>">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                                <button class="btn btn--ghost btn--sm" type="submit">Quitar</button>
+                            </form>
+                        <?php endif; ?>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        </section>
     </div>
 </div>

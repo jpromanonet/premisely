@@ -7,6 +7,7 @@ namespace Premisely\Modules\Reports\Controllers;
 use Premisely\Core\Database\Connection;
 use Premisely\Core\Http\Controller;
 use Premisely\Core\Http\Request;
+use Premisely\Modules\Stock\Services\StockService;
 use Premisely\Shared\PropertyContext;
 
 final class ReportController extends Controller
@@ -15,6 +16,7 @@ final class ReportController extends Controller
     {
         $pid = PropertyContext::propertyId();
         $month = (string) ($request->query('month') ?: date('Y-m'));
+        (new StockService())->syncAllWithShopping($pid);
 
         $inventory = [
             'count' => (int) Connection::fetchColumn(
@@ -40,7 +42,7 @@ final class ReportController extends Controller
             'low' => (int) Connection::fetchColumn(
                 'SELECT COUNT(*) FROM stock_items
                  WHERE property_id = :p AND archived_at IS NULL
-                   AND minimum_quantity > 0 AND quantity <= minimum_quantity',
+                   AND quantity <= 0',
                 ['p' => $pid]
             ),
         ];

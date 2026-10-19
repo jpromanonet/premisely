@@ -17,22 +17,22 @@ foreach ($categories as $category) {
 }
 $groupOrder[] = 'sin';
 $groups = [];
-$lowCount = 0;
+$zeroCount = 0;
 foreach ($items as $item) {
     $slug = (string) ($item['category_slug'] ?? '');
     if ($slug === '' || !isset($labels[$slug])) {
         $slug = 'sin';
     }
     $groups[$slug][] = $item;
-    if ((float) $item['quantity'] <= (float) $item['minimum_quantity'] && (float) $item['minimum_quantity'] > 0) {
-        $lowCount++;
+    if ((float) $item['quantity'] <= 0) {
+        $zeroCount++;
     }
 }
 ?>
 <div class="page-header">
     <div>
         <h1>Stock</h1>
-        <p><?= count($items) === 0 ? 'Nada cargado.' : 'Lo que hay en casa, y qué hay que reponer.' ?></p>
+        <p><?= count($items) === 0 ? 'Nada cargado.' : 'Lo que hay en casa. Si llega a 0, pasa a compras.' ?></p>
     </div>
     <div class="actions">
         <a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/shopping')) ?>">Compras</a>
@@ -47,10 +47,10 @@ foreach ($items as $item) {
         <strong><?= count($items) ?></strong>
         <p>ítems cargados</p>
     </div>
-    <div class="metric<?= $lowCount > 0 ? ' is-alert' : '' ?>">
-        <span>Para reponer</span>
-        <strong><?= $lowCount ?></strong>
-        <p>en o bajo el mínimo</p>
+    <div class="metric<?= $zeroCount > 0 ? ' is-alert' : '' ?>">
+        <span>En cero</span>
+        <strong><?= $zeroCount ?></strong>
+        <p>están en compras</p>
     </div>
 </div>
 <?php endif; ?>
@@ -58,25 +58,25 @@ foreach ($items as $item) {
 <?php if ($items !== []): ?>
 <nav class="rubro-filters">
     <select class="rubro-select" aria-label="Rubro" onchange="if (this.value) location.href = this.value">
-        <option value="<?= e(url('/properties/' . $pid . '/stock')) ?>" <?= $rubro === '' ? 'selected' : '' ?>>Todos</option>
+        <option value="<?= e(url('/properties/' . $pid . '/stock')) ?>" <?= $rubro === '' ? 'selected' : '' ?>>Todos (<?= count($items) ?>)</option>
         <?php foreach ($categories as $category): ?>
             <?php $slug = (string) $category['slug']; ?>
-            <option value="<?= e(url('/properties/' . $pid . '/stock', ['rubro' => $slug])) ?>" <?= $rubro === $slug ? 'selected' : '' ?>><?= e((string) $category['name']) ?></option>
+            <option value="<?= e(url('/properties/' . $pid . '/stock', ['rubro' => $slug])) ?>" <?= $rubro === $slug ? 'selected' : '' ?>><?= e((string) $category['name']) ?> (<?= count($groups[$slug] ?? []) ?>)</option>
         <?php endforeach; ?>
         <?php if (($groups['sin'] ?? []) !== [] || $rubro === 'sin'): ?>
-            <option value="<?= e(url('/properties/' . $pid . '/stock', ['rubro' => 'sin'])) ?>" <?= $rubro === 'sin' ? 'selected' : '' ?>>Sin rubro</option>
+            <option value="<?= e(url('/properties/' . $pid . '/stock', ['rubro' => 'sin'])) ?>" <?= $rubro === 'sin' ? 'selected' : '' ?>>Sin rubro (<?= count($groups['sin'] ?? []) ?>)</option>
         <?php endif; ?>
     </select>
-    <a class="<?= $rubro === '' ? 'is-on' : '' ?>" href="<?= e(url('/properties/' . $pid . '/stock')) ?>">Todos</a>
+    <a class="<?= $rubro === '' ? 'is-on' : '' ?>" href="<?= e(url('/properties/' . $pid . '/stock')) ?>">Todos <span class="rubro-n">(<?= count($items) ?>)</span></a>
     <?php foreach ($categories as $category): ?>
         <?php
         $slug = (string) $category['slug'];
         $tone = $palette[$slug] ?? $palette['sin'];
         ?>
-        <a class="<?= $rubro === $slug ? 'is-on' : '' ?>" href="<?= e(url('/properties/' . $pid . '/stock', ['rubro' => $slug])) ?>"><i style="--dot:#<?= e($tone['bg']) ?>"></i><?= e((string) $category['name']) ?></a>
+        <a class="<?= $rubro === $slug ? 'is-on' : '' ?>" href="<?= e(url('/properties/' . $pid . '/stock', ['rubro' => $slug])) ?>"><i style="--dot:#<?= e($tone['bg']) ?>"></i><?= e((string) $category['name']) ?> <span class="rubro-n">(<?= count($groups[$slug] ?? []) ?>)</span></a>
     <?php endforeach; ?>
     <?php if (($groups['sin'] ?? []) !== [] || $rubro === 'sin'): ?>
-        <a class="<?= $rubro === 'sin' ? 'is-on' : '' ?>" href="<?= e(url('/properties/' . $pid . '/stock', ['rubro' => 'sin'])) ?>"><i style="--dot:#<?= e($palette['sin']['bg']) ?>"></i>Sin rubro</a>
+        <a class="<?= $rubro === 'sin' ? 'is-on' : '' ?>" href="<?= e(url('/properties/' . $pid . '/stock', ['rubro' => 'sin'])) ?>"><i style="--dot:#<?= e($palette['sin']['bg']) ?>"></i>Sin rubro <span class="rubro-n">(<?= count($groups['sin'] ?? []) ?>)</span></a>
     <?php endif; ?>
 </nav>
 <?php endif; ?>
@@ -94,20 +94,17 @@ foreach ($items as $item) {
     $tone = $palette[$slug] ?? $palette['sin'];
     ?>
     <section class="stock-group" style="--rubro:#<?= e($tone['bg']) ?>;--rubro-ink:#<?= e($tone['ink']) ?>">
-        <h2 class="rubro-cut"><?= e($labels[$slug] ?? 'Sin rubro') ?></h2>
+        <h2 class="rubro-cut"><?= e($labels[$slug] ?? 'Sin rubro') ?> <span class="rubro-n">(<?= count($groups[$slug]) ?>)</span></h2>
         <?php foreach ($groups[$slug] as $item): ?>
             <?php
             $qty = (float) $item['quantity'];
-            $min = (float) $item['minimum_quantity'];
-            $isLow = $min > 0 && $qty <= $min;
             ?>
-            <article class="stock-item<?= $isLow ? ' is-low' : '' ?>" id="item-<?= e((string) $item['public_id']) ?>">
+            <article class="stock-item" id="item-<?= e((string) $item['public_id']) ?>">
                 <div class="stock-item__main">
                     <strong><?= e($item['name']) ?></strong>
                     <?php if (trim((string) ($item['brand'] ?? '')) !== ''): ?>
                         <p class="muted"><?= e((string) $item['brand']) ?></p>
                     <?php endif; ?>
-                    <?php if ($isLow): ?><span class="stock-flag">Reponer</span><?php endif; ?>
                 </div>
                 <div class="stock-step">
                     <?php if ($canEdit): ?>
@@ -151,7 +148,6 @@ foreach ($items as $item) {
                                     </select>
                                 </label>
                                 <label>Unidad <input name="unit" value="<?= e((string) $item['unit']) ?>"></label>
-                                <label>Pedir en compras cuando queden <input type="number" step="1" min="0" name="minimum_quantity" value="<?= e(format_qty_input($item['minimum_quantity'])) ?>"></label>
                                 <button class="btn btn--sm" type="submit">Guardar</button>
                             </form>
                             <form method="post" action="<?= e(url('/properties/' . $pid . '/stock/' . $item['public_id'] . '/archive')) ?>" onsubmit="return confirm('¿Sacar este ítem del stock?');">

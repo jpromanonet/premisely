@@ -10,7 +10,7 @@
 <div class="card-grid">
     <div class="stat"><span>Propiedades</span><strong><?= (int) $stats['properties'] ?></strong></div>
     <div class="stat"><span>Tareas abiertas</span><strong><?= (int) $stats['open_tasks'] ?></strong></div>
-    <div class="stat"><span>Stock bajo</span><strong><?= (int) $stats['low_stock'] ?></strong></div>
+    <div class="stat"><span>En cero</span><strong><?= (int) $stats['low_stock'] ?></strong></div>
     <div class="stat"><span>Hábitos por vencer</span><strong><?= (int) $stats['upcoming_routines'] ?></strong></div>
 </div>
 
