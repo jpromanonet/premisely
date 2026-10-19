@@ -38,7 +38,9 @@ final class ReportController extends Controller
                 ['p' => $pid]
             ),
             'low' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM stock_items WHERE property_id = :p AND archived_at IS NULL AND quantity <= minimum_quantity',
+                'SELECT COUNT(*) FROM stock_items
+                 WHERE property_id = :p AND archived_at IS NULL
+                   AND minimum_quantity > 0 AND quantity <= minimum_quantity',
                 ['p' => $pid]
             ),
         ];
@@ -59,28 +61,27 @@ final class ReportController extends Controller
             ),
         ];
 
-        $ops = [
-            'tasks_done' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM tasks WHERE property_id = :p AND status = \'completed\'
-                   AND DATE_FORMAT(completed_at, \'%Y-%m\') = :m',
-                ['p' => $pid, 'm' => $month]
-            ),
-            'routines_overdue' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM routines WHERE property_id = :p AND is_active = 1 AND archived_at IS NULL
-                   AND next_due_at IS NOT NULL AND next_due_at < NOW()',
-                ['p' => $pid]
-            ),
-            'maintenance_upcoming' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM maintenance_plans WHERE property_id = :p AND archived_at IS NULL
-                   AND next_due_at IS NOT NULL AND next_due_at <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)',
-                ['p' => $pid]
-            ),
-            'warranties_expiring' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM inventory_item_warranties WHERE property_id = :p AND archived_at IS NULL
-                   AND ends_on IS NOT NULL AND ends_on BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 60 DAY)',
-                ['p' => $pid]
-            ),
-        ];
+        $trendRows = Connection::fetchAll(
+            'SELECT DATE_FORMAT(spent_at, \'%Y-%m\') AS ym, COALESCE(SUM(amount),0) AS total
+             FROM expenses
+             WHERE property_id = :p AND archived_at IS NULL
+               AND spent_at >= DATE_SUB(STR_TO_DATE(CONCAT(:m, \'-01\'), \'%Y-%m-%d\'), INTERVAL 5 MONTH)
+               AND spent_at < DATE_ADD(STR_TO_DATE(CONCAT(:m2, \'-01\'), \'%Y-%m-%d\'), INTERVAL 1 MONTH)
+             GROUP BY ym',
+            ['p' => $pid, 'm' => $month, 'm2' => $month]
+        );
+        $byMonth = [];
+        foreach ($trendRows as $row) {
+            $byMonth[(string) $row['ym']] = (float) $row['total'];
+        }
+        $trend = [];
+        $cursor = \DateTimeImmutable::createFromFormat('Y-m-d', $month . '-01') ?: new \DateTimeImmutable('first day of this month');
+        $cursor = $cursor->modify('-5 months');
+        for ($i = 0; $i < 6; $i++) {
+            $key = $cursor->format('Y-m');
+            $trend[] = ['month' => $key, 'total' => $byMonth[$key] ?? 0.0];
+            $cursor = $cursor->modify('+1 month');
+        }
 
         $this->view('reports/index', [
             'title' => 'Reportes',
@@ -89,7 +90,26 @@ final class ReportController extends Controller
             'inventory' => $inventory,
             'stock' => $stock,
             'expenses' => $expenses,
-            'ops' => $ops,
+            'trend' => $trend,
+            'tasksDone' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM tasks
+                 WHERE property_id = :p AND archived_at IS NULL AND status = \'done\'
+                   AND completed_at IS NOT NULL AND DATE_FORMAT(completed_at, \'%Y-%m\') = :m',
+                ['p' => $pid, 'm' => $month]
+            ),
+            'habitsDone' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM routine_executions e
+                 INNER JOIN routines r ON r.id = e.routine_id
+                 WHERE e.property_id = :p AND r.archived_at IS NULL
+                   AND DATE_FORMAT(e.executed_at, \'%Y-%m\') = :m',
+                ['p' => $pid, 'm' => $month]
+            ),
+            'shopping' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM shopping_list_items si
+                 INNER JOIN shopping_lists sl ON sl.id = si.shopping_list_id
+                 WHERE sl.property_id = :p AND sl.status = \'active\' AND si.status = \'pending\'',
+                ['p' => $pid]
+            ),
         ]);
     }
 }

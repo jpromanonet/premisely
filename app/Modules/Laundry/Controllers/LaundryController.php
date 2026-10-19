@@ -15,19 +15,7 @@ final class LaundryController extends Controller
 {
     public function index(Request $request, array $params): never
     {
-        $routines = Connection::fetchAll(
-            'SELECT r.*, s.name AS space_name FROM routines r
-             LEFT JOIN spaces s ON s.id = r.space_id
-             WHERE r.property_id = :p AND r.category = \'laundry\' AND r.archived_at IS NULL
-             ORDER BY r.next_due_at IS NULL, r.next_due_at, r.title',
-            ['p' => PropertyContext::propertyId()]
-        );
-        $this->view('laundry/index', [
-            'title' => 'Lavandería',
-            'property' => PropertyContext::property(),
-            'routines' => $routines,
-            'canEdit' => PropertyContext::canEdit(),
-        ]);
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/routines');
     }
 
     public function create(Request $request, array $params): never

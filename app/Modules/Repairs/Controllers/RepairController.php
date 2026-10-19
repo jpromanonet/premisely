@@ -22,25 +22,24 @@ final class RepairController extends Controller
         'cancelada' => 'Cancelada',
     ];
 
+    /** El mismo trabajo no debe quedar como reparación vieja y como tarea. */
+    public static function archiveCopiesOfTasks(int $propertyId): void
+    {
+        Connection::query(
+            'UPDATE repair_records r
+             INNER JOIN tasks t
+               ON t.property_id = r.property_id
+              AND t.archived_at IS NULL
+              AND LOWER(TRIM(t.title)) = LOWER(TRIM(r.title))
+             SET r.archived_at = NOW(), r.updated_at = NOW()
+             WHERE r.property_id = :p AND r.archived_at IS NULL',
+            ['p' => $propertyId]
+        );
+    }
+
     public function index(Request $request, array $params): never
     {
-        $pid = PropertyContext::propertyId();
-        $repairs = Connection::fetchAll(
-            'SELECT r.*, s.name AS space_name
-             FROM repair_records r
-             LEFT JOIN spaces s ON s.id = r.space_id
-             WHERE r.property_id = :pid AND r.archived_at IS NULL
-             ORDER BY FIELD(r.status, \'pendiente\', \'en_curso\', \'hecho\', \'cancelada\'), r.reported_at DESC',
-            ['pid' => $pid]
-        );
-
-        $this->view('repairs/index', [
-            'title' => 'Reparaciones',
-            'property' => PropertyContext::property(),
-            'repairs' => $repairs,
-            'statuses' => self::STATUSES,
-            'canEdit' => PropertyContext::canEdit(),
-        ]);
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . date('Y-m-d'));
     }
 
     public function create(Request $request, array $params): never
@@ -285,7 +284,10 @@ final class RepairController extends Controller
         }
 
         flash('success', 'Reparación marcada como hecha.');
-        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/repairs');
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . date('Y-m-d'));
     }
 
     public function destroy(Request $request, array $params): never
@@ -303,7 +305,10 @@ final class RepairController extends Controller
         );
         ActivityLogger::log(PropertyContext::propertyId(), 'repair_record', (int) $repair['id'], 'archived');
         flash('success', 'Reparación eliminada.');
-        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/repairs');
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . date('Y-m-d'));
     }
 
     /** @return array<string, mixed> */

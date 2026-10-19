@@ -146,6 +146,21 @@ final class MoveController extends Controller
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/moves/' . $move['public_id']);
     }
 
+    public function destroy(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/moves');
+        }
+        $move = $this->findMove($params['move'] ?? '');
+        Connection::query(
+            'UPDATE moves SET archived_at = NOW() WHERE id = :id AND property_id = :p',
+            ['id' => $move['id'], 'p' => PropertyContext::propertyId()]
+        );
+        flash('success', 'Mudanza eliminada.');
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/moves');
+    }
+
     /** @return array<string, mixed> */
     private function findMove(string $key): array
     {

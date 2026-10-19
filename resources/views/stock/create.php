@@ -1,12 +1,13 @@
 <?php
 /** @var array<string,mixed> $property */
-/** @var list<array<string,mixed>> $spaces */
 /** @var list<array<string,mixed>> $categories */
 $pid = $property['public_id'];
+$categories = $categories ?? [];
 ?>
 <div class="page-header">
     <div>
-        <h1>Nuevo ítem</h1>
+        <h1>Nuevo en stock</h1>
+        <p>Lo que ya hay en casa.</p>
     </div>
     <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/stock')) ?>">← Volver</a>
 </div>
@@ -14,25 +15,21 @@ $pid = $property['public_id'];
     <form method="post" action="<?= e(url('/properties/' . $pid . '/stock')) ?>" class="stack">
         <?= csrf_field() ?>
         <div class="form-grid">
-            <label>Nombre <input name="name" required></label>
-            <label>Cantidad <input type="number" step="0.001" name="quantity" value="0"></label>
-            <label>Unidad <input name="unit" value="u"></label>
-            <label>Mínimo <input type="number" step="0.001" name="minimum_quantity" value="0"></label>
-            <label>Objetivo <input type="number" step="0.001" name="target_quantity"></label>
-            <label>Espacio
-                <select name="space_id"><option value="">—</option>
-                    <?php foreach ($spaces as $s): ?><option value="<?= (int)$s['id'] ?>"><?= e($s['name']) ?></option><?php endforeach; ?>
+            <label>Nombre <input name="name" required placeholder="Sal, papel, detergente"></label>
+            <label>Marca <input name="brand" placeholder="Opcional"></label>
+            <label>Cantidad <input type="number" step="1" min="0" name="quantity" value="1"></label>
+            <label>Unidad <input name="unit" placeholder="paquetes, kg, unidades"></label>
+            <label>Rubro
+                <select name="category_id">
+                    <option value="">Sin rubro</option>
+                    <?php foreach ($categories as $category): ?>
+                        <option value="<?= (int) $category['id'] ?>"><?= e($category['name']) ?></option>
+                    <?php endforeach; ?>
                 </select>
             </label>
-            <label>Categoría
-                <select name="category_id"><option value="">—</option>
-                    <?php foreach ($categories as $c): ?><option value="<?= (int)$c['id'] ?>"><?= e($c['name']) ?></option><?php endforeach; ?>
-                </select>
-            </label>
-            <label><span>Auto agregar a compras</span> <input type="checkbox" name="auto_add_to_shopping" value="1"></label>
         </div>
         <div class="actions">
-            <button class="btn" type="submit">Crear</button>
+            <button class="btn" type="submit">Guardar</button>
             <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/stock')) ?>">Cancelar</a>
         </div>
     </form>

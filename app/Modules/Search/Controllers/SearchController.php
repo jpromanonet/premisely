@@ -18,11 +18,14 @@ final class SearchController extends Controller
         $results = [
             'inventory' => [],
             'stock' => [],
+            'shopping' => [],
             'tasks' => [],
             'spaces' => [],
+            'documents' => [],
+            'expenses' => [],
         ];
 
-        if ($q !== '' && mb_strlen($q) >= 2) {
+        if ($q !== '') {
             $like = '%' . $q . '%';
 
             $results['inventory'] = Connection::fetchAll(
@@ -58,6 +61,34 @@ final class SearchController extends Controller
                  WHERE property_id = :pid AND archived_at IS NULL
                    AND (name LIKE :q OR description LIKE :q2)
                  ORDER BY name LIMIT 20',
+                ['pid' => $pid, 'q' => $like, 'q2' => $like]
+            );
+
+            $results['shopping'] = Connection::fetchAll(
+                'SELECT sli.name, sli.brand
+                 FROM shopping_list_items sli
+                 INNER JOIN shopping_lists sl ON sl.id = sli.shopping_list_id
+                 WHERE sl.property_id = :pid AND sl.archived_at IS NULL AND sli.status = \'pending\'
+                   AND (sli.name LIKE :q OR sli.brand LIKE :q2)
+                 ORDER BY sli.name LIMIT 20',
+                ['pid' => $pid, 'q' => $like, 'q2' => $like]
+            );
+
+            $results['documents'] = Connection::fetchAll(
+                'SELECT public_id, title
+                 FROM documents
+                 WHERE property_id = :pid AND archived_at IS NULL
+                   AND title LIKE :q
+                 ORDER BY title LIMIT 20',
+                ['pid' => $pid, 'q' => $like]
+            );
+
+            $results['expenses'] = Connection::fetchAll(
+                'SELECT public_id, title, amount, currency
+                 FROM expenses
+                 WHERE property_id = :pid AND archived_at IS NULL
+                   AND (title LIKE :q OR notes LIKE :q2)
+                 ORDER BY spent_at DESC LIMIT 20',
                 ['pid' => $pid, 'q' => $like, 'q2' => $like]
             );
         }

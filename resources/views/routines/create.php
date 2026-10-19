@@ -6,26 +6,41 @@ $pid = $property['public_id'];
 ?>
 <div class="page-header">
     <div>
-        <h1>Nueva rutina</h1>
+        <h1>Nuevo hábito</h1>
+        <p>Elegí cada cuánto aparece y, si es por semana o por mes, qué día.</p>
     </div>
     <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/routines')) ?>">← Volver</a>
 </div>
 <section class="panel">
-    <form method="post" action="<?= e(url('/properties/' . $pid . '/routines')) ?>" class="stack">
+    <form method="post" action="<?= e(url('/properties/' . $pid . '/routines')) ?>" class="stack habit-schedule">
         <?= csrf_field() ?>
         <div class="form-grid">
             <label>Título <input name="title" required></label>
             <label>Categoría
                 <select name="category">
-                    <?php foreach (['general','cleaning','garden','pets','other'] as $c): ?><option value="<?= $c ?>"><?= $c ?></option><?php endforeach; ?>
+                    <?php foreach (['general' => 'Casa', 'cleaning' => 'Limpieza', 'laundry' => 'Lavandería', 'garden' => 'Jardín', 'pets' => 'Mascotas', 'other' => 'Otra'] as $value => $label): ?><option value="<?= e($value) ?>"><?= e($label) ?></option><?php endforeach; ?>
                 </select>
             </label>
             <label>Frecuencia
                 <select name="frequency_type">
-                    <?php foreach (['daily','weekly','monthly','yearly'] as $f): ?><option value="<?= $f ?>"><?= $f ?></option><?php endforeach; ?>
+                    <?php foreach (['daily' => 'Cada día', 'weekly' => 'Cada semana', 'monthly' => 'Cada mes', 'yearly' => 'Cada año'] as $value => $label): ?><option value="<?= e($value) ?>"><?= e($label) ?></option><?php endforeach; ?>
                 </select>
             </label>
             <label>Intervalo <input type="number" name="frequency_interval" value="1" min="1"></label>
+            <label class="habit-weekday">Día de la semana
+                <select name="weekday">
+                    <?php foreach ([1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'] as $value => $label): ?>
+                        <option value="<?= $value ?>" <?= (int) date('N') === $value ? 'selected' : '' ?>><?= e($label) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <label class="habit-monthday">Día del mes
+                <select name="monthday">
+                    <?php for ($day = 1; $day <= 31; $day++): ?>
+                        <option value="<?= $day ?>" <?= (int) date('j') === $day ? 'selected' : '' ?>><?= $day ?></option>
+                    <?php endfor; ?>
+                </select>
+            </label>
             <label>Espacio
                 <select name="space_id"><option value="">—</option>
                     <?php foreach ($spaces as $s): ?><option value="<?= (int)$s['id'] ?>"><?= e($s['name']) ?></option><?php endforeach; ?>

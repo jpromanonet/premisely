@@ -18,19 +18,30 @@ final class StockController extends Controller
     {
         $pid = PropertyContext::propertyId();
         $items = Connection::fetchAll(
-            'SELECT st.*, s.name AS space_name, c.name AS category_name
+            'SELECT st.*, c.name AS category_name, c.slug AS category_slug
              FROM stock_items st
-             LEFT JOIN spaces s ON s.id = st.space_id
              LEFT JOIN stock_categories c ON c.id = st.category_id
              WHERE st.property_id = :pid AND st.archived_at IS NULL
              ORDER BY st.name',
             ['pid' => $pid]
         );
 
+        $categories = $this->categories($pid);
+        $rubro = (string) $request->query('rubro', '');
+        $known = [];
+        foreach ($categories as $category) {
+            $known[(string) $category['slug']] = true;
+        }
+        if ($rubro !== '' && $rubro !== 'sin' && !isset($known[$rubro])) {
+            $rubro = '';
+        }
+
         $this->view('stock/index', [
             'title' => 'Stock / Consumibles',
             'property' => PropertyContext::property(),
             'items' => $items,
+            'categories' => $categories,
+            'rubro' => $rubro,
             'canEdit' => PropertyContext::canEdit(),
         ]);
     }
@@ -45,14 +56,7 @@ final class StockController extends Controller
         $this->view('stock/create', [
             'title' => 'Nuevo ítem',
             'property' => PropertyContext::property(),
-            'spaces' => Connection::fetchAll(
-                'SELECT id, name FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
-                ['pid' => $pid]
-            ),
-            'categories' => Connection::fetchAll(
-                'SELECT id, name FROM stock_categories WHERE property_id IS NULL OR property_id = :pid ORDER BY name',
-                ['pid' => $pid]
-            ),
+            'categories' => $this->categories($pid),
             'canEdit' => true,
         ]);
     }
@@ -86,15 +90,16 @@ final class StockController extends Controller
         }
 
         $item = $this->findItem($params['item'] ?? '');
+        $back = '/properties/' . PropertyContext::property()['public_id'] . '/stock#item-' . $item['public_id'];
         $validator = Validator::make($request->all(), ['name' => 'required|max:180']);
         if ($validator->fails()) {
             flash('error', $validator->firstError());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/stock');
+            $this->redirect($back);
         }
 
         (new StockService())->update(PropertyContext::propertyId(), (int) $item['id'], $request->all());
         flash('success', 'Stock actualizado.');
-        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/stock');
+        $this->redirect($back);
     }
 
     public function adjust(Request $request, array $params): never
@@ -108,6 +113,7 @@ final class StockController extends Controller
         }
 
         $item = $this->findItem($params['item'] ?? '');
+        $back = '/properties/' . PropertyContext::property()['public_id'] . '/stock#item-' . $item['public_id'];
         try {
             $updated = (new StockService())->adjustQuantity(
                 PropertyContext::propertyId(),
@@ -125,15 +131,16 @@ final class StockController extends Controller
                 $this->json(['error' => $e->getMessage()], 422);
             }
             flash('error', $e->getMessage());
-            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/stock');
+            $this->redirect($back);
         }
 
         if ($request->wantsJson()) {
             $this->json(['ok' => true, 'item' => $updated]);
         }
 
-        flash('success', 'Movimiento registrado.');
-        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/stock');
+        $left = format_qty((float) ($updated['quantity'] ?? 0));
+        flash('success', 'Quedaron ' . $left . '.');
+        $this->redirect($back);
     }
 
     public function archive(Request $request, array $params): never
@@ -147,6 +154,32 @@ final class StockController extends Controller
         (new StockService())->archive(PropertyContext::propertyId(), (int) $item['id']);
         flash('success', 'Ítem archivado.');
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/stock');
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function categories(int $pid): array
+    {
+        $rubros = shopping_rubros();
+        $rows = Connection::fetchAll(
+            'SELECT id, slug FROM stock_categories WHERE property_id IS NULL'
+        );
+        $bySlug = [];
+        foreach ($rows as $row) {
+            $bySlug[(string) $row['slug']] = $row;
+        }
+        $ordered = [];
+        foreach ($rubros as $slug => $label) {
+            if (!isset($bySlug[$slug])) {
+                continue;
+            }
+            $ordered[] = [
+                'id' => (int) $bySlug[$slug]['id'],
+                'slug' => $slug,
+                'name' => $label,
+            ];
+        }
+
+        return $ordered;
     }
 
     /** @return array<string, mixed> */

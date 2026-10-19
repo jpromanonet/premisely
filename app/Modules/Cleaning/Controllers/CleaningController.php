@@ -15,20 +15,7 @@ final class CleaningController extends Controller
 {
     public function index(Request $request, array $params): never
     {
-        $routines = Connection::fetchAll(
-            'SELECT r.*, s.name AS space_name FROM routines r
-             LEFT JOIN spaces s ON s.id = r.space_id
-             WHERE r.property_id = :p AND r.category = \'cleaning\' AND r.archived_at IS NULL
-             ORDER BY s.name, r.title',
-            ['p' => PropertyContext::propertyId()]
-        );
-        $this->view('cleaning/index', [
-            'title' => 'Limpieza',
-            'heading' => 'Limpieza',
-            'property' => PropertyContext::property(),
-            'routines' => $routines,
-            'canEdit' => PropertyContext::canEdit(),
-        ]);
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/routines');
     }
 
     public function create(Request $request, array $params): never
@@ -45,10 +32,7 @@ final class CleaningController extends Controller
                 'SELECT id, name FROM spaces WHERE property_id = :p AND archived_at IS NULL ORDER BY name',
                 ['p' => $pid]
             ),
-            'members' => Connection::fetchAll(
-                'SELECT id, display_name FROM property_members WHERE property_id = :p AND status = \'active\' ORDER BY display_name',
-                ['p' => $pid]
-            ),
+            'members' => PropertyContext::assignableMembers(),
             'canEdit' => true,
         ]);
     }
@@ -103,10 +87,7 @@ final class CleaningController extends Controller
                 'SELECT id, name FROM spaces WHERE property_id = :p AND archived_at IS NULL ORDER BY name',
                 ['p' => $pid]
             ),
-            'members' => Connection::fetchAll(
-                'SELECT id, display_name FROM property_members WHERE property_id = :p AND status = \'active\' ORDER BY display_name',
-                ['p' => $pid]
-            ),
+            'members' => PropertyContext::assignableMembers(),
             'listPath' => '/properties/' . $prop . '/cleaning',
             'formAction' => '/properties/' . $prop . '/cleaning/' . $routine['public_id'],
             'fixedCategory' => 'cleaning',

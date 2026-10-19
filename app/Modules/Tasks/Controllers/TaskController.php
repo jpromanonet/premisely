@@ -16,23 +16,8 @@ final class TaskController extends Controller
 {
     public function index(Request $request, array $params): never
     {
-        $pid = PropertyContext::propertyId();
-        $tasks = Connection::fetchAll(
-            'SELECT t.*, s.name AS space_name, m.display_name AS assignee_name
-             FROM tasks t
-             LEFT JOIN spaces s ON s.id = t.space_id
-             LEFT JOIN property_members m ON m.id = t.assignee_member_id
-             WHERE t.property_id = :pid AND t.archived_at IS NULL
-             ORDER BY FIELD(t.status, \'pending\', \'in_progress\', \'done\', \'cancelled\'), t.due_date IS NULL, t.due_date',
-            ['pid' => $pid]
-        );
-
-        $this->view('tasks/index', [
-            'title' => 'Tareas',
-            'property' => PropertyContext::property(),
-            'tasks' => $tasks,
-            'canEdit' => PropertyContext::canEdit(),
-        ]);
+        $day = (string) ($request->query('day') ?: date('Y-m-d'));
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . $day);
     }
 
     public function create(Request $request, array $params): never
@@ -49,10 +34,9 @@ final class TaskController extends Controller
                 'SELECT id, name FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
                 ['pid' => $pid]
             ),
-            'members' => Connection::fetchAll(
-                'SELECT id, display_name FROM property_members WHERE property_id = :pid AND status = \'active\' ORDER BY display_name',
-                ['pid' => $pid]
-            ),
+            'members' => PropertyContext::assignableMembers(),
+            'due' => (string) $request->query('due', date('Y-m-d')),
+            'kind' => (string) $request->query('kind', 'tarea') === 'reparacion' ? 'reparacion' : 'tarea',
             'canEdit' => true,
         ]);
     }
@@ -77,10 +61,10 @@ final class TaskController extends Controller
         Connection::query(
             'INSERT INTO tasks (
                 public_id, property_id, space_id, assignee_member_id, title, description,
-                priority, status, due_date, tags, created_by, created_at
+                priority, kind, status, due_date, tags, created_by, created_at
              ) VALUES (
                 :public_id, :property_id, :space_id, :assignee_member_id, :title, :description,
-                :priority, :status, :due_date, :tags, :created_by, NOW()
+                :priority, :kind, :status, :due_date, :tags, :created_by, NOW()
              )',
             [
                 'public_id' => ulid(),
@@ -92,16 +76,20 @@ final class TaskController extends Controller
                 'title' => (string) $request->input('title'),
                 'description' => $request->input('description'),
                 'priority' => (string) ($request->input('priority') ?: 'normal'),
+                'kind' => (string) $request->input('kind') === 'reparacion' ? 'reparacion' : 'tarea',
                 'status' => 'pending',
-                'due_date' => $request->input('due_date') ?: null,
+                'due_date' => (string) $request->input('kind') === 'reparacion' ? null : date('Y-m-d'),
                 'tags' => $request->input('tags'),
                 'created_by' => Auth::id(),
             ]
         );
 
         ActivityLogger::log($pid, 'task', (int) Connection::lastInsertId(), 'created');
-        flash('success', 'Tarea creada.');
-        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks');
+        flash('success', (string) $request->input('kind') === 'reparacion' ? 'Trabajo cargado.' : 'Tarea creada.');
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . date('Y-m-d'));
     }
 
     public function edit(Request $request, array $params): never
@@ -120,10 +108,7 @@ final class TaskController extends Controller
                 'SELECT id, name FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
                 ['pid' => $pid]
             ),
-            'members' => Connection::fetchAll(
-                'SELECT id, display_name FROM property_members WHERE property_id = :pid AND status = \'active\' ORDER BY display_name',
-                ['pid' => $pid]
-            ),
+            'members' => PropertyContext::assignableMembers(),
             'canEdit' => true,
         ]);
     }
@@ -147,11 +132,16 @@ final class TaskController extends Controller
         }
 
         $status = (string) ($request->input('status') ?: $task['status']);
+        $isRepair = (string) $request->input('kind') === 'reparacion';
+        $existingDue = (string) ($task['due_date'] ?? '');
+        $today = date('Y-m-d');
+        $due = $isRepair ? null : (($existingDue !== '' && $existingDue >= $today) ? $existingDue : $today);
         Connection::query(
             'UPDATE tasks SET
                 title = :title,
                 description = :description,
                 priority = :priority,
+                kind = :kind,
                 status = :status,
                 due_date = :due_date,
                 space_id = :space_id,
@@ -164,9 +154,10 @@ final class TaskController extends Controller
                 'title' => (string) $request->input('title'),
                 'description' => $request->input('description'),
                 'priority' => (string) ($request->input('priority') ?: 'normal'),
+                'kind' => $isRepair ? 'reparacion' : 'tarea',
                 'status' => $status,
                 'status2' => $status,
-                'due_date' => $request->input('due_date') ?: null,
+                'due_date' => $due,
                 'space_id' => $request->input('space_id') !== '' && $request->input('space_id') !== null
                     ? (int) $request->input('space_id') : null,
                 'assignee_member_id' => $request->input('assignee_member_id') !== '' && $request->input('assignee_member_id') !== null
@@ -178,7 +169,10 @@ final class TaskController extends Controller
         );
         ActivityLogger::log(PropertyContext::propertyId(), 'task', (int) $task['id'], 'updated');
         flash('success', 'Tarea actualizada.');
-        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks');
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . ($due ?: date('Y-m-d')));
     }
 
     public function updateStatus(Request $request, array $params): never
@@ -222,7 +216,10 @@ final class TaskController extends Controller
         }
 
         flash('success', 'Estado actualizado.');
-        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks');
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . date('Y-m-d'));
     }
 
     public function archive(Request $request, array $params): never

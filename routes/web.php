@@ -117,8 +117,10 @@ $router->post('/properties/{property}/stock/{item}/archive', [StockController::c
 
 // Shopping
 $router->get('/properties/{property}/shopping', [ShoppingController::class, 'index'], $property);
+$router->get('/properties/{property}/shopping/export', [ShoppingController::class, 'export'], $property);
 $router->get('/properties/{property}/shopping/create', [ShoppingController::class, 'create'], $property);
 $router->post('/properties/{property}/shopping', [ShoppingController::class, 'store'], $propertyCsrf);
+$router->post('/properties/{property}/shopping/{item}', [ShoppingController::class, 'update'], $propertyCsrf);
 $router->post('/properties/{property}/shopping/{item}/complete', [ShoppingController::class, 'complete'], $propertyCsrf);
 $router->post('/properties/{property}/shopping/{item}/delete', [ShoppingController::class, 'delete'], $propertyCsrf);
 
@@ -138,6 +140,9 @@ $router->post('/properties/{property}/routines', [RoutineController::class, 'sto
 $router->get('/properties/{property}/routines/{routine}/edit', [RoutineController::class, 'edit'], $property);
 $router->post('/properties/{property}/routines/{routine}', [RoutineController::class, 'update'], $propertyCsrf);
 $router->post('/properties/{property}/routines/{routine}/execute', [RoutineController::class, 'execute'], $propertyCsrf);
+$router->post('/properties/{property}/routines/{routine}/undo', [RoutineController::class, 'undo'], $propertyCsrf);
+$router->post('/properties/{property}/routines/{routine}/frequency', [RoutineController::class, 'updateFrequency'], $propertyCsrf);
+$router->post('/properties/{property}/routines/{routine}/reorder', [RoutineController::class, 'reorder'], $propertyCsrf);
 $router->post('/properties/{property}/routines/{routine}/toggle', [RoutineController::class, 'toggleActive'], $propertyCsrf);
 $router->post('/properties/{property}/routines/{routine}/delete', [RoutineController::class, 'archive'], $propertyCsrf);
 
@@ -258,6 +263,7 @@ $router->post('/properties/{property}/moves', [\Premisely\Modules\Moves\Controll
 $router->get('/properties/{property}/moves/{move}', [\Premisely\Modules\Moves\Controllers\MoveController::class, 'show'], $property);
 $router->post('/properties/{property}/moves/{move}/items', [\Premisely\Modules\Moves\Controllers\MoveController::class, 'addItem'], $propertyCsrf);
 $router->post('/properties/{property}/moves/{move}/apply', [\Premisely\Modules\Moves\Controllers\MoveController::class, 'apply'], $propertyCsrf);
+$router->post('/properties/{property}/moves/{move}/delete', [\Premisely\Modules\Moves\Controllers\MoveController::class, 'destroy'], $propertyCsrf);
 
 // V2 — Automations
 $router->get('/properties/{property}/automations', [\Premisely\Modules\Automations\Controllers\AutomationController::class, 'index'], $property);

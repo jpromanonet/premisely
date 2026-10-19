@@ -46,16 +46,24 @@ return static function (): void {
         }
     }
 
-    $stockCats = ['alimentos', 'limpieza', 'higiene', 'otros'];
-    foreach ($stockCats as $name) {
+    $stockCats = [
+        'almacen' => 'Almacén / supermercado',
+        'verduleria' => 'Verdulería / frutas',
+        'carniceria' => 'Carnicería / granjita',
+        'congelados' => 'Congelados',
+        'limpieza' => 'Limpieza',
+        'higiene' => 'Higiene personal',
+        'miscelanea' => 'Miscelánea',
+    ];
+    foreach ($stockCats as $slug => $name) {
         $exists = Connection::fetch(
             'SELECT id FROM stock_categories WHERE property_id IS NULL AND slug = :s',
-            ['s' => $name]
+            ['s' => $slug]
         );
         if (!$exists) {
             Connection::query(
                 'INSERT INTO stock_categories (property_id, name, slug) VALUES (NULL, :n, :s)',
-                ['n' => ucfirst($name), 's' => $name]
+                ['n' => $name, 's' => $slug]
             );
         }
     }

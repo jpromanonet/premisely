@@ -83,9 +83,20 @@ if (!function_exists('view_path')) {
 if (!function_exists('url')) {
     function url(string $path = '/', array $query = []): string
     {
+        $fragment = '';
+        if (str_contains($path, '#')) {
+            [$path, $fragment] = explode('#', $path, 2);
+            $fragment = '#' . $fragment;
+        }
         $path = '/' . ltrim($path, '/');
         if ($path === '//') {
             $path = '/';
+        }
+        if (str_contains($path, '?')) {
+            [$path, $qs] = explode('?', $path, 2);
+            $embedded = [];
+            parse_str($qs, $embedded);
+            $query = array_merge($embedded, $query);
         }
 
         $appUrl = rtrim((string) config('app.url', ''), '/');
@@ -104,7 +115,18 @@ if (!function_exists('url')) {
             $href .= (str_contains($href, '?') ? '&' : '?') . http_build_query($query);
         }
 
-        return $href;
+        return $href . $fragment;
+    }
+}
+
+if (!function_exists('form_target')) {
+    /** Action for GET forms. The route goes in a hidden field so the query is not discarded. */
+    function form_target(): string
+    {
+        $full = url('/');
+        $cut = strpos($full, '?');
+
+        return $cut === false ? $full : substr($full, 0, $cut);
     }
 }
 
@@ -230,6 +252,99 @@ if (!function_exists('property_tenure_label')) {
             'propia' => 'Propia',
             default => 'Propia',
         };
+    }
+}
+
+if (!function_exists('shopping_rubros')) {
+    /** @return array<string, string> */
+    function shopping_rubros(): array
+    {
+        return [
+            'almacen' => 'Almacén / supermercado',
+            'verduleria' => 'Verdulería / frutas',
+            'carniceria' => 'Carnicería / granjita',
+            'congelados' => 'Congelados',
+            'limpieza' => 'Limpieza',
+            'higiene' => 'Higiene personal',
+            'miscelanea' => 'Miscelánea',
+        ];
+    }
+}
+
+if (!function_exists('rubro_palette')) {
+    /** @return array<string, array{bg:string,ink:string}> */
+    function rubro_palette(): array
+    {
+        return [
+            'almacen' => ['bg' => 'C5EDE8', 'ink' => '12343A'],
+            'alimentos' => ['bg' => 'F3D6A8', 'ink' => '6A3E10'],
+            'verduleria' => ['bg' => 'CDE8A8', 'ink' => '2A4A12'],
+            'carniceria' => ['bg' => 'F6C7B0', 'ink' => '6B2E16'],
+            'congelados' => ['bg' => 'C9DFF5', 'ink' => '1A3E66'],
+            'limpieza' => ['bg' => 'DDD0F2', 'ink' => '3E2A66'],
+            'higiene' => ['bg' => 'F8E3B0', 'ink' => '6A4A10'],
+            'miscelanea' => ['bg' => 'E4E8EE', 'ink' => '3A4450'],
+            'otros' => ['bg' => 'E8EEF2', 'ink' => '3A4450'],
+            'sin' => ['bg' => 'EEF2F6', 'ink' => '5C6B7A'],
+        ];
+    }
+}
+
+if (!function_exists('format_qty')) {
+    function format_qty(mixed $value): string
+    {
+        $n = (float) $value;
+        if (abs($n - round($n)) < 0.0005) {
+            return number_format((float) round($n), 0, ',', '.');
+        }
+        $text = number_format($n, 2, ',', '.');
+
+        return rtrim(rtrim($text, '0'), ',');
+    }
+}
+
+if (!function_exists('format_qty_input')) {
+    function format_qty_input(mixed $value): string
+    {
+        $n = (float) $value;
+        if (abs($n - round($n)) < 0.0005) {
+            return (string) (int) round($n);
+        }
+
+        return rtrim(rtrim(number_format($n, 3, '.', ''), '0'), '.');
+    }
+}
+
+if (!function_exists('format_money')) {
+    function format_money(mixed $value): string
+    {
+        return number_format((float) $value, 2, ',', '.');
+    }
+}
+
+if (!function_exists('unit_label')) {
+    function unit_label(mixed $quantity, ?string $unit): string
+    {
+        $one = abs((float) $quantity - 1) < 0.0005;
+        $key = strtolower(trim((string) $unit));
+        $map = [
+            '' => ['unidad', 'unidades'],
+            'u' => ['unidad', 'unidades'],
+            'un' => ['unidad', 'unidades'],
+            'unidad' => ['unidad', 'unidades'],
+            'unidades' => ['unidad', 'unidades'],
+            'paquete' => ['paquete', 'paquetes'],
+            'paquetes' => ['paquete', 'paquetes'],
+            'rollo' => ['rollo', 'rollos'],
+            'botella' => ['botella', 'botellas'],
+            'lata' => ['lata', 'latas'],
+            'caja' => ['caja', 'cajas'],
+        ];
+        if (isset($map[$key])) {
+            return $one ? $map[$key][0] : $map[$key][1];
+        }
+
+        return $key !== '' ? trim((string) $unit) : ($one ? 'unidad' : 'unidades');
     }
 }
 

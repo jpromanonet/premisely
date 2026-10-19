@@ -16,6 +16,12 @@ $done = ($move['status'] ?? '') === 'completed';
     </div>
     <div class="actions">
         <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/moves')) ?>">← Volver</a>
+        <?php if (!empty($canEdit)): ?>
+            <form method="post" action="<?= e(url('/properties/' . $pid . '/moves/' . $move['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar esta mudanza?');">
+                <?= csrf_field() ?>
+                <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
+            </form>
+        <?php endif; ?>
         <?php if (!empty($canEdit) && !$done): ?>
         <form method="post" action="<?= e(url('/properties/' . $pid . '/moves/' . $move['public_id'] . '/apply')) ?>" onsubmit="return confirm('¿Aplicar mudanza? Esta acción modifica el inventario.');">
             <?= csrf_field() ?>

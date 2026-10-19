@@ -118,12 +118,16 @@ final class BoxController extends Controller
 
     public function archive(Request $request, array $params): never
     {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/boxes');
+        }
         $box = $this->find((string) ($params['box'] ?? ''));
         Connection::query(
             'UPDATE storage_boxes SET archived_at = NOW() WHERE id = :id AND property_id = :p',
             ['id' => $box['id'], 'p' => PropertyContext::propertyId()]
         );
-        flash('success', 'Caja archivada.');
+        flash('success', 'Caja eliminada.');
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/boxes');
     }
 

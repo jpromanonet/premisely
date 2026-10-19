@@ -42,10 +42,7 @@ final class ClothingController extends Controller
         $this->view('clothing/create', [
             'title' => 'Nueva prenda',
             'property' => PropertyContext::property(),
-            'members' => Connection::fetchAll(
-                'SELECT id, display_name FROM property_members WHERE property_id = :p AND status = \'active\' ORDER BY display_name',
-                ['p' => $pid]
-            ),
+            'members' => \Premisely\Shared\PropertyContext::assignableMembers(),
             'spaces' => Connection::fetchAll(
                 'SELECT id, name FROM spaces WHERE property_id = :p AND archived_at IS NULL ORDER BY name',
                 ['p' => $pid]

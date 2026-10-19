@@ -19,25 +19,44 @@ final class MaintenanceController extends Controller
 {
     public function index(Request $request, array $params): never
     {
-        $pid = PropertyContext::propertyId();
-        $plans = Connection::fetchAll(
-            'SELECT * FROM maintenance_plans
-             WHERE property_id = :pid AND archived_at IS NULL
-             ORDER BY next_due_at IS NULL, next_due_at, title',
-            ['pid' => $pid]
+        $filter = (string) $request->query('estado', '');
+        if (!in_array($filter, ['pendiente', 'hecho'], true)) {
+            $filter = '';
+        }
+        $rows = Connection::fetchAll(
+            'SELECT public_id, title, status, due_date
+             FROM tasks
+             WHERE property_id = :pid AND archived_at IS NULL AND kind = \'reparacion\'
+               AND status IN (\'pending\', \'in_progress\', \'done\')
+             ORDER BY status = \'done\', id DESC',
+            ['pid' => PropertyContext::propertyId()]
         );
-        $records = Connection::fetchAll(
-            'SELECT * FROM maintenance_records
-             WHERE property_id = :pid
-             ORDER BY performed_at DESC LIMIT 30',
-            ['pid' => $pid]
-        );
+        $pending = 0;
+        $done = 0;
+        $jobs = [];
+        foreach ($rows as $row) {
+            $isDone = ($row['status'] ?? '') === 'done';
+            if ($isDone) {
+                $done++;
+            } else {
+                $pending++;
+            }
+            if ($filter === 'pendiente' && $isDone) {
+                continue;
+            }
+            if ($filter === 'hecho' && !$isDone) {
+                continue;
+            }
+            $jobs[] = $row;
+        }
 
         $this->view('maintenance/index', [
             'title' => 'Mantenimiento',
             'property' => PropertyContext::property(),
-            'plans' => $plans,
-            'records' => $records,
+            'jobs' => $jobs,
+            'filter' => $filter,
+            'pending' => $pending,
+            'done' => $done,
             'canEdit' => PropertyContext::canEdit(),
         ]);
     }

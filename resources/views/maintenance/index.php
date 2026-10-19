@@ -1,85 +1,76 @@
 <?php
 /** @var array<string,mixed> $property */
-/** @var list<array<string,mixed>> $plans */
-/** @var list<array<string,mixed>> $records */
+/** @var list<array<string,mixed>> $jobs */
+/** @var string $filter */
+/** @var int $pending */
+/** @var int $done */
 /** @var bool $canEdit */
 $pid = $property['public_id'];
+$filters = [
+    '' => 'Todos',
+    'pendiente' => 'Pendientes',
+    'hecho' => 'Hechos',
+];
+$back = url('/properties/' . $pid . '/maintenance', $filter === '' ? [] : ['estado' => $filter]);
+$empty = [
+    '' => 'No hay trabajos cargados.',
+    'pendiente' => 'No hay pendientes.',
+    'hecho' => 'No hay hechos.',
+];
 ?>
 <div class="page-header">
     <div>
         <h1>Mantenimiento</h1>
-        <p>Cuida hoy, disfrutá siempre.</p>
+        <p><?= (int) $pending ?> pendientes · <?= (int) $done ?> hechos</p>
     </div>
-    <?php if (!empty($canEdit)): ?>
-    <div class="actions">
-        <a class="btn" href="<?= e(url('/properties/' . $pid . '/maintenance/plans/create')) ?>">+ Nuevo plan</a>
-        <a class="btn btn-secondary" href="<?= e(url('/properties/' . $pid . '/maintenance/records/create')) ?>">+ Registrar</a>
-    </div>
-    <?php endif; ?>
 </div>
-<section class="panel">
-    <h2>Planes</h2>
-    <div class="table-wrap">
-        <table>
-            <thead><tr><th>Título</th><th>Próxima</th><th>Última</th><th>Proveedor</th><th data-nosort></th></tr></thead>
-            <tbody>
-            <?php if ($plans === []): ?>
-                <tr><td colspan="5" class="muted">No hay planes todavía.</td></tr>
+
+<div class="chip-row">
+    <?php foreach ($filters as $value => $label): ?>
+        <a class="chip<?= $filter === $value ? ' is-on' : '' ?>" href="<?= e(url('/properties/' . $pid . '/maintenance', $value === '' ? [] : ['estado' => $value])) ?>"><?= e($label) ?></a>
+    <?php endforeach; ?>
+</div>
+
+<?php if (!empty($canEdit)): ?>
+    <form class="job-add" method="post" action="<?= e(url('/properties/' . $pid . '/tasks')) ?>">
+        <?= csrf_field() ?>
+        <input type="hidden" name="kind" value="reparacion">
+        <input type="hidden" name="priority" value="normal">
+        <input type="hidden" name="redirect" value="<?= e('/properties/' . $pid . '/maintenance') ?>">
+        <input name="title" required placeholder="Qué hay que hacer en casa" aria-label="Trabajo">
+        <button class="btn" type="submit">Agregar</button>
+    </form>
+<?php endif; ?>
+
+<?php if ($jobs === []): ?>
+    <p class="empty-note"><?= e($empty[$filter] ?? $empty['']) ?></p>
+<?php endif; ?>
+
+<div class="stack-cards">
+    <?php foreach ($jobs as $job): ?>
+        <?php $isDone = ($job['status'] ?? '') === 'done'; ?>
+        <article class="quest<?= $isDone ? ' is-done' : '' ?>">
+            <?php if (!empty($canEdit)): ?>
+                <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $job['public_id'] . '/status')) ?>">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="status" value="<?= $isDone ? 'pending' : 'done' ?>">
+                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                    <button class="quest-check" type="submit" aria-label="<?= $isDone ? 'Marcar pendiente' : 'Marcar hecho' ?>"><?= $isDone ? '✓' : '' ?></button>
+                </form>
+            <?php else: ?>
+                <span class="quest-check<?= $isDone ? ' is-on' : '' ?>"><?= $isDone ? '✓' : '' ?></span>
             <?php endif; ?>
-            <?php foreach ($plans as $p): ?>
-                <tr>
-                    <td><?= e($p['title']) ?></td>
-                    <td><?= e((string) ($p['next_due_at'] ?? '—')) ?></td>
-                    <td><?= e((string) ($p['last_done_at'] ?? '—')) ?></td>
-                    <td><?= e((string) ($p['provider_name'] ?? '—')) ?></td>
-                    <td>
-                        <?php if (!empty($canEdit)): ?>
-                            <div class="actions" style="margin-top:0">
-                                <a class="btn btn--ghost btn--sm" href="<?= e(url('/properties/' . $pid . '/maintenance/plans/' . $p['public_id'] . '/edit')) ?>">Editar</a>
-                                <form method="post" action="<?= e(url('/properties/' . $pid . '/maintenance/plans/' . $p['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este plan de mantenimiento?');">
-                                    <?= csrf_field() ?>
-                                    <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
-                                </form>
-                            </div>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-</section>
-<section class="panel">
-    <h2>Registros recientes</h2>
-    <div class="table-wrap">
-        <table>
-            <thead><tr><th>Fecha</th><th>Título</th><th>Costo</th><th data-nosort></th></tr></thead>
-            <tbody>
-            <?php if ($records === []): ?>
-                <tr><td colspan="4" class="muted">No hay registros todavía.</td></tr>
+            <div class="quest__body">
+                <strong><?= e((string) $job['title']) ?></strong>
+                <p><?= $isDone ? 'Hecho' : 'Pendiente' ?></p>
+            </div>
+            <?php if (!empty($canEdit)): ?>
+                <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $job['public_id'] . '/archive')) ?>" onsubmit="return confirm('¿Sacar este trabajo?');">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                    <button class="btn btn--ghost btn--sm" type="submit">Sacar</button>
+                </form>
             <?php endif; ?>
-            <?php foreach ($records as $r): ?>
-                <tr>
-                    <td><?= e((string) $r['performed_at']) ?></td>
-                    <td><?= e($r['title']) ?></td>
-                    <td>
-                        <?php if ($r['cost'] !== null): ?>
-                            <?= e((string) $r['cost']) ?> <?= e((string) ($r['currency'] ?? '')) ?>
-                        <?php else: ?>
-                            —
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <?php if (!empty($canEdit)): ?>
-                            <form method="post" action="<?= e(url('/properties/' . $pid . '/maintenance/records/' . $r['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este registro?');">
-                                <?= csrf_field() ?>
-                                <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
-                            </form>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-</section>
+        </article>
+    <?php endforeach; ?>
+</div>

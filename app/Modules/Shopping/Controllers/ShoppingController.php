@@ -11,28 +11,106 @@ use Premisely\Core\Http\Request;
 use Premisely\Core\Validation\Validator;
 use Premisely\Modules\Activity\Services\ActivityLogger;
 use Premisely\Modules\Stock\Services\StockService;
+use Premisely\Core\Http\Response;
 use Premisely\Shared\ExpenseHelper;
 use Premisely\Shared\PropertyContext;
+use Premisely\Shared\ShoppingWorkbook;
 
 final class ShoppingController extends Controller
 {
     public function index(Request $request, array $params): never
     {
         $list = $this->activeList(true);
+        (new StockService())->syncAllWithShopping(PropertyContext::propertyId());
         $items = Connection::fetchAll(
             'SELECT * FROM shopping_list_items
-             WHERE shopping_list_id = :lid
-             ORDER BY FIELD(status, \'pending\', \'completed\'), priority DESC, created_at DESC',
+             WHERE shopping_list_id = :lid AND status = \'pending\'
+             ORDER BY priority DESC, created_at DESC',
             ['lid' => $list['id']]
         );
+
+        $rubros = shopping_rubros();
+        $rubro = (string) $request->query('rubro', '');
+        if ($rubro !== '' && $rubro !== 'sin' && !isset($rubros[$rubro])) {
+            $rubro = '';
+        }
 
         $this->view('shopping/index', [
             'title' => 'Lista de compras',
             'property' => PropertyContext::property(),
             'list' => $list,
             'items' => $items,
+            'rubros' => $rubros,
+            'rubro' => $rubro,
             'canEdit' => PropertyContext::canEdit(),
         ]);
+    }
+
+    public function export(Request $request, array $params): never
+    {
+        $list = $this->activeList(true);
+        (new StockService())->syncAllWithShopping(PropertyContext::propertyId());
+        $items = Connection::fetchAll(
+            'SELECT name, brand, category, quantity, unit FROM shopping_list_items
+             WHERE shopping_list_id = :lid AND status = \'pending\'
+             ORDER BY name',
+            ['lid' => $list['id']]
+        );
+        $rubros = shopping_rubros();
+        $order = array_flip(array_keys($rubros));
+        usort($items, static function (array $a, array $b) use ($order): int {
+            $ia = $order[(string) ($a['category'] ?? '')] ?? 99;
+            $ib = $order[(string) ($b['category'] ?? '')] ?? 99;
+            if ($ia !== $ib) {
+                return $ia <=> $ib;
+            }
+
+            return strcasecmp((string) $a['name'], (string) $b['name']);
+        });
+
+        $palette = rubro_palette();
+        $grouped = [];
+        foreach ($items as $item) {
+            $qty = (float) $item['quantity'];
+            $key = (string) ($item['category'] ?? '');
+            if (!isset($rubros[$key])) {
+                $key = 'sin';
+            }
+            $grouped[$key][] = [
+                'product' => (string) $item['name'],
+                'brand' => (string) ($item['brand'] ?? ''),
+                'quantity' => trim(format_qty($qty) . ' ' . unit_label($qty, (string) ($item['unit'] ?? ''))),
+            ];
+        }
+        $groups = [];
+        foreach (array_merge(array_keys($rubros), ['sin']) as $key) {
+            if (($grouped[$key] ?? []) === []) {
+                continue;
+            }
+            $tone = $palette[$key] ?? $palette['sin'];
+            $groups[] = [
+                'category' => $key === 'sin' ? 'Sin rubro' : $rubros[$key],
+                'color' => $tone['bg'],
+                'items' => $grouped[$key],
+            ];
+        }
+
+        $date = date('d/m/Y');
+        $title = 'Lista de Compras - ' . $date;
+        try {
+            $binary = ShoppingWorkbook::render($title, $groups);
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/shopping');
+        }
+
+        $filename = 'Lista de Compras - ' . str_replace('/', '-', $date) . '.xlsx';
+        (new Response($binary, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="lista-de-compras.xlsx"; filename*=UTF-8\'\'' . rawurlencode($filename),
+            'Content-Length' => (string) strlen($binary),
+            'Cache-Control' => 'no-store',
+        ]))->send();
     }
 
     public function create(Request $request, array $params): never
@@ -50,6 +128,7 @@ final class ShoppingController extends Controller
             'title' => 'Agregar ítem',
             'property' => PropertyContext::property(),
             'stockItems' => $stockItems,
+            'rubros' => shopping_rubros(),
             'canEdit' => true,
         ]);
     }
@@ -74,17 +153,23 @@ final class ShoppingController extends Controller
         $stockItemId = $request->input('stock_item_id');
         $stockItemId = ($stockItemId === null || $stockItemId === '') ? null : (int) $stockItemId;
 
+        $rubro = (string) $request->input('category', '');
+        if (!array_key_exists($rubro, shopping_rubros())) {
+            $rubro = '';
+        }
         Connection::query(
             'INSERT INTO shopping_list_items (
-                shopping_list_id, stock_item_id, name, quantity, unit, estimated_price, priority, status, added_by, created_at
+                shopping_list_id, stock_item_id, name, brand, category, quantity, unit, estimated_price, priority, status, added_by, created_at
              ) VALUES (
-                :list_id, :stock_item_id, :name, :quantity, :unit, :estimated_price, :priority, :status, :added_by, NOW()
+                :list_id, :stock_item_id, :name, :brand, :category, :quantity, :unit, :estimated_price, :priority, :status, :added_by, NOW()
              )',
             [
                 'list_id' => $list['id'],
                 'stock_item_id' => $stockItemId,
-                'name' => (string) $request->input('name'),
-                'quantity' => (float) ($request->input('quantity') ?: 1),
+                'name' => trim((string) $request->input('name')),
+                'brand' => trim((string) $request->input('brand', '')) ?: null,
+                'category' => $rubro !== '' ? $rubro : null,
+                'quantity' => max(1, (float) ($request->input('quantity') ?: 1)),
                 'unit' => (string) ($request->input('unit') ?: 'u'),
                 'estimated_price' => $request->input('estimated_price') !== '' ? $request->input('estimated_price') : null,
                 'priority' => (string) ($request->input('priority') ?: 'normal'),
@@ -96,6 +181,67 @@ final class ShoppingController extends Controller
         ActivityLogger::log(PropertyContext::propertyId(), 'shopping_list_item', (int) Connection::lastInsertId(), 'created');
         flash('success', 'Ítem agregado a la lista.');
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/shopping');
+    }
+
+    public function update(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/shopping');
+        }
+
+        $itemId = (int) ($params['item'] ?? 0);
+        $back = '/properties/' . PropertyContext::property()['public_id'] . '/shopping#item-' . $itemId;
+        $list = $this->activeList(false);
+        $name = trim((string) $request->input('name', ''));
+        if (!$list || $name === '') {
+            flash('error', 'El nombre es obligatorio.');
+            $this->redirect($itemId > 0 ? $back : '/properties/' . PropertyContext::property()['public_id'] . '/shopping');
+        }
+        $current = Connection::fetch(
+            'SELECT stock_item_id, name FROM shopping_list_items
+             WHERE id = :id AND shopping_list_id = :lid AND status = \'pending\' LIMIT 1',
+            ['id' => $itemId, 'lid' => $list['id']]
+        );
+        $rubro = (string) $request->input('category', '');
+        if (!array_key_exists($rubro, shopping_rubros())) {
+            $rubro = '';
+        }
+        $unit = (string) ($request->input('unit') ?: 'u');
+        Connection::query(
+            'UPDATE shopping_list_items SET
+                name = :name, brand = :brand, category = :category, quantity = :quantity, unit = :unit
+             WHERE id = :id AND shopping_list_id = :lid AND status = \'pending\'',
+            [
+                'name' => $name,
+                'brand' => trim((string) $request->input('brand', '')) ?: null,
+                'category' => $rubro !== '' ? $rubro : null,
+                'quantity' => max(1, (float) ($request->input('quantity') ?: 1)),
+                'unit' => $unit,
+                'id' => $itemId,
+                'lid' => $list['id'],
+            ]
+        );
+        if ($current) {
+            $stockId = (new StockService())->copyIdentityToStock(
+                PropertyContext::propertyId(),
+                !empty($current['stock_item_id']) ? (int) $current['stock_item_id'] : null,
+                (string) $current['name'],
+                $name,
+                $unit,
+                trim((string) $request->input('brand', '')),
+                $rubro,
+                true
+            );
+            if ($stockId > 0 && empty($current['stock_item_id'])) {
+                Connection::query(
+                    'UPDATE shopping_list_items SET stock_item_id = :sid WHERE id = :id AND status = \'pending\'',
+                    ['sid' => $stockId, 'id' => $itemId]
+                );
+            }
+        }
+        flash('success', 'Ítem actualizado.');
+        $this->redirect($back);
     }
 
     public function complete(Request $request, array $params): never
@@ -118,30 +264,33 @@ final class ShoppingController extends Controller
         }
 
         $actualPrice = $request->input('actual_price');
-        $updateStock = (bool) $request->input('update_stock');
         $createExpense = (bool) $request->input('create_expense');
+        $bought = (float) str_replace(',', '.', (string) ($request->input('bought_quantity', $request->input('quantity', ''))));
+        if ($bought <= 0) {
+            flash('error', 'Decí cuántas unidades compraste.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/shopping');
+        }
         $pid = PropertyContext::propertyId();
 
-        Connection::begin();
         try {
             Connection::query(
                 'UPDATE shopping_list_items SET status = \'completed\', completed_by = :uid,
-                 completed_at = NOW(), actual_price = :price
+                 completed_at = NOW(), actual_price = :price, bought_quantity = :qty
                  WHERE id = :id',
                 [
                     'uid' => Auth::id(),
                     'price' => $actualPrice !== '' && $actualPrice !== null ? $actualPrice : null,
+                    'qty' => $bought,
                     'id' => $itemId,
                 ]
             );
 
-            if ($updateStock && $item['stock_item_id']) {
-                (new StockService())->adjustQuantity($pid, (int) $item['stock_item_id'], [
-                    'type' => 'purchase',
-                    'quantity' => (float) $item['quantity'],
-                    'unit_price' => $actualPrice !== '' && $actualPrice !== null ? $actualPrice : null,
-                    'notes' => 'Compra desde lista #' . $list['id'],
-                ]);
+            $stockId = (new StockService())->intakeFromShopping($pid, $item, $bought, $actualPrice);
+            if ($stockId > 0) {
+                Connection::query(
+                    'UPDATE shopping_list_items SET stock_item_id = :stock WHERE id = :id',
+                    ['stock' => $stockId, 'id' => $itemId]
+                );
             }
 
             if ($createExpense && $actualPrice !== '' && $actualPrice !== null && (float) $actualPrice > 0) {
@@ -157,14 +306,22 @@ final class ShoppingController extends Controller
             }
 
             ActivityLogger::log($pid, 'shopping_list_item', $itemId, 'completed');
-            Connection::commit();
+            if ($stockId > 0) {
+                $fresh = Connection::fetch(
+                    'SELECT * FROM stock_items WHERE id = :id AND property_id = :pid AND archived_at IS NULL',
+                    ['id' => $stockId, 'pid' => $pid]
+                );
+                if ($fresh) {
+                    (new StockService())->syncWithShopping($pid, $fresh);
+                }
+            }
         } catch (\Throwable $e) {
             Connection::rollBack();
             flash('error', $e->getMessage());
             $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/shopping');
         }
 
-        flash('success', 'Ítem marcado como comprado.');
+        flash('success', 'Comprado. Quedó en el stock.');
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/shopping');
     }
 

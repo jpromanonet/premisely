@@ -9,9 +9,9 @@
 $pid = $property['public_id'];
 $listPath = $listPath ?? ('/properties/' . $pid . '/routines');
 $formAction = $formAction ?? ('/properties/' . $pid . '/routines/' . $routine['public_id']);
-$heading = $heading ?? 'Editar rutina';
+$heading = $heading ?? 'Editar hábito';
 $freqs = ['daily' => 'Diaria', 'weekly' => 'Semanal', 'monthly' => 'Mensual', 'yearly' => 'Anual'];
-$categories = ['general', 'cleaning', 'laundry', 'garden', 'pets', 'other'];
+$categories = ['general' => 'Casa', 'cleaning' => 'Limpieza', 'laundry' => 'Lavandería', 'garden' => 'Jardín', 'pets' => 'Mascotas', 'other' => 'Otra'];
 $fixedCategory = $fixedCategory ?? null;
 ?>
 <div class="page-header">
@@ -19,7 +19,7 @@ $fixedCategory = $fixedCategory ?? null;
     <a class="btn btn--ghost" href="<?= e(url($listPath)) ?>">← Volver</a>
 </div>
 <section class="panel">
-    <form method="post" action="<?= e(url($formAction)) ?>" class="stack">
+    <form method="post" action="<?= e(url($formAction)) ?>" class="stack habit-schedule<?= ($routine['frequency_type'] ?? '') === 'weekly' ? ' is-weekly' : '' ?><?= ($routine['frequency_type'] ?? '') === 'monthly' ? ' is-monthly' : '' ?>">
         <?= csrf_field() ?>
         <div class="form-grid">
             <label>Título <input name="title" value="<?= e((string) $routine['title']) ?>" required></label>
@@ -28,8 +28,8 @@ $fixedCategory = $fixedCategory ?? null;
             <?php else: ?>
                 <label>Categoría
                     <select name="category">
-                        <?php foreach ($categories as $c): ?>
-                            <option value="<?= e($c) ?>" <?= ($routine['category'] ?? '') === $c ? 'selected' : '' ?>><?= e($c) ?></option>
+                        <?php foreach ($categories as $value => $label): ?>
+                            <option value="<?= e($value) ?>" <?= ($routine['category'] ?? '') === $value ? 'selected' : '' ?>><?= e($label) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </label>
@@ -42,7 +42,22 @@ $fixedCategory = $fixedCategory ?? null;
                 </select>
             </label>
             <label>Intervalo <input type="number" name="frequency_interval" value="<?= e((string) ($routine['frequency_interval'] ?? 1)) ?>" min="1"></label>
-            <label>Próxima <input type="datetime-local" name="next_due_at" value="<?= e($routine['next_due_at'] ? date('Y-m-d\TH:i', strtotime((string) $routine['next_due_at'])) : '') ?>"></label>
+            <?php $scheduleDay = (int) ($routine['schedule_day'] ?? 0); ?>
+            <label class="habit-weekday">Día de la semana
+                <select name="weekday">
+                    <?php foreach ([1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'] as $value => $label): ?>
+                        <option value="<?= $value ?>" <?= $scheduleDay === $value ? 'selected' : '' ?>><?= e($label) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <label class="habit-monthday">Día del mes
+                <select name="monthday">
+                    <?php for ($day = 1; $day <= 31; $day++): ?>
+                        <option value="<?= $day ?>" <?= $scheduleDay === $day ? 'selected' : '' ?>><?= $day ?></option>
+                    <?php endfor; ?>
+                </select>
+            </label>
+            <label class="habit-nextdue">Próxima <input type="datetime-local" name="next_due_at" value="<?= e($routine['next_due_at'] ? date('Y-m-d\TH:i', strtotime((string) $routine['next_due_at'])) : '') ?>"></label>
             <label>Espacio
                 <select name="space_id"><option value="">—</option>
                     <?php foreach ($spaces as $s): ?>
@@ -71,5 +86,10 @@ $fixedCategory = $fixedCategory ?? null;
             <button class="btn" type="submit">Guardar</button>
             <a class="btn btn--ghost" href="<?= e(url($listPath)) ?>">Cancelar</a>
         </div>
+    </form>
+    <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $routine['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este hábito?');">
+        <?= csrf_field() ?>
+        <input type="hidden" name="redirect" value="<?= e(url($listPath)) ?>">
+        <button class="btn btn--danger" type="submit">Eliminar hábito</button>
     </form>
 </section>

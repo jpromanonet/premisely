@@ -22,7 +22,14 @@ $pid = $property['public_id'];
                     <td><?= e($m['status']) ?></td>
                     <td><?= e($m['destination_name'] ?? 'Misma') ?></td>
                     <td class="mono"><?= e($m['planned_at'] ?? '—') ?></td>
-                    <td><a href="<?= e(url('/properties/' . $pid . '/moves/' . $m['public_id'])) ?>">Abrir</a></td>
+                    <td>
+                        <?php if (!empty($canEdit)): ?>
+                            <form method="post" action="<?= e(url('/properties/' . $pid . '/moves/' . $m['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar esta mudanza?');">
+                                <?= csrf_field() ?>
+                                <button class="btn btn--ghost btn--sm" type="submit">Eliminar</button>
+                            </form>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

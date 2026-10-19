@@ -8,7 +8,7 @@ use Premisely\Core\Auth\Auth;
 use Premisely\Core\Database\Connection;
 use Premisely\Core\Http\Controller;
 use Premisely\Core\Http\Request;
-use Premisely\Modules\Activity\Services\ActivityLogger;
+use Premisely\Modules\Routines\Controllers\RoutineController;
 use Premisely\Shared\PropertyContext;
 
 final class DashboardController extends Controller
@@ -62,75 +62,111 @@ final class DashboardController extends Controller
     {
         $property = PropertyContext::property();
         $pid = PropertyContext::propertyId();
+        $today = date('Y-m-d');
+        $board = RoutineController::forDay($pid, $today);
 
-        $stats = [
-            'rooms' => $property['rooms'] !== null && $property['rooms'] !== '' ? (int) $property['rooms'] : null,
-            'area_m2' => $property['area_m2'] !== null && $property['area_m2'] !== '' ? (float) $property['area_m2'] : null,
-            'spaces' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM spaces WHERE property_id = :pid AND archived_at IS NULL',
-                ['pid' => $pid]
-            ),
-            'inventory' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM inventory_items WHERE property_id = :pid AND archived_at IS NULL',
-                ['pid' => $pid]
-            ),
-            'stock' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM stock_items WHERE property_id = :pid AND archived_at IS NULL',
-                ['pid' => $pid]
-            ),
-            'members' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM property_members WHERE property_id = :pid AND status = \'active\'',
-                ['pid' => $pid]
-            ),
-            'open_tasks' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM tasks WHERE property_id = :pid AND archived_at IS NULL AND status IN (\'pending\',\'in_progress\')',
-                ['pid' => $pid]
-            ),
-            'low_stock' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM stock_items WHERE property_id = :pid AND archived_at IS NULL AND quantity <= minimum_quantity',
-                ['pid' => $pid]
-            ),
-            'shopping_pending' => (int) Connection::fetchColumn(
+        $tasksToday = (int) Connection::fetchColumn(
+            'SELECT COUNT(*) FROM tasks
+             WHERE property_id = :pid AND archived_at IS NULL
+               AND status IN (\'pending\', \'in_progress\')
+               AND (due_date = :day OR due_date IS NULL)',
+            ['pid' => $pid, 'day' => $today]
+        );
+        \Premisely\Modules\Repairs\Controllers\RepairController::archiveCopiesOfTasks($pid);
+        $openRepairs = (int) Connection::fetchColumn(
+            'SELECT COUNT(*) FROM repair_records
+             WHERE property_id = :pid AND archived_at IS NULL
+               AND status IN (\'pendiente\', \'en_curso\', \'open\', \'in_progress\')',
+            ['pid' => $pid]
+        );
+        $meals = Connection::fetchAll(
+            'SELECT slot, COUNT(*) AS n FROM meal_entries
+             WHERE property_id = :pid AND meal_date = :day
+             GROUP BY slot',
+            ['pid' => $pid, 'day' => $today]
+        );
+        $filled = [];
+        foreach ($meals as $meal) {
+            if ((int) $meal['n'] > 0) {
+                $filled[] = (string) $meal['slot'];
+            }
+        }
+
+        $this->view('dashboard/property', [
+            'title' => 'Panel · ' . $property['name'],
+            'property' => $property,
+            'today' => $today,
+            'habitsDone' => $board['done'],
+            'habitsTotal' => $board['total'],
+            'todo' => $tasksToday + $openRepairs,
+            'mealsFilled' => $filled,
+            'shopping' => (int) Connection::fetchColumn(
                 'SELECT COUNT(*) FROM shopping_list_items si
                  INNER JOIN shopping_lists sl ON sl.id = si.shopping_list_id
                  WHERE sl.property_id = :pid AND sl.status = \'active\' AND si.status = \'pending\'',
                 ['pid' => $pid]
             ),
-            'open_repairs' => (int) Connection::fetchColumn(
-                'SELECT COUNT(*) FROM repair_records WHERE property_id = :pid AND archived_at IS NULL AND status IN (\'pendiente\', \'en_curso\', \'open\', \'in_progress\')',
+            'lowStock' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM stock_items
+                 WHERE property_id = :pid AND archived_at IS NULL
+                   AND minimum_quantity > 0 AND quantity <= minimum_quantity',
                 ['pid' => $pid]
             ),
-            'month_expenses' => (float) (Connection::fetchColumn(
+            'inventory' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM inventory_items
+                 WHERE property_id = :pid AND archived_at IS NULL',
+                ['pid' => $pid]
+            ),
+            'stockCount' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM stock_items WHERE property_id = :pid AND archived_at IS NULL',
+                ['pid' => $pid]
+            ),
+            'monthExpenses' => (float) (Connection::fetchColumn(
                 'SELECT COALESCE(SUM(amount),0) FROM expenses
                  WHERE property_id = :pid AND archived_at IS NULL
                    AND spent_at >= DATE_FORMAT(CURDATE(), \'%Y-%m-01\')',
                 ['pid' => $pid]
             ) ?: 0),
-        ];
-
-        $dueSoon = Connection::fetchAll(
-            'SELECT title, next_due_at, category FROM routines
-             WHERE property_id = :pid AND archived_at IS NULL AND is_active = 1
-               AND next_due_at IS NOT NULL AND next_due_at <= DATE_ADD(NOW(), INTERVAL 14 DAY)
-             ORDER BY next_due_at LIMIT 8',
-            ['pid' => $pid]
-        );
-
-        $tasks = Connection::fetchAll(
-            'SELECT public_id, title, status, due_date, priority FROM tasks
-             WHERE property_id = :pid AND archived_at IS NULL AND status IN (\'pending\',\'in_progress\')
-             ORDER BY due_date IS NULL, due_date LIMIT 8',
-            ['pid' => $pid]
-        );
-
-        $this->view('dashboard/property', [
-            'title' => 'Panel · ' . $property['name'],
-            'property' => $property,
-            'stats' => $stats,
-            'dueSoon' => $dueSoon,
-            'tasks' => $tasks,
-            'activity' => ActivityLogger::forProperty($pid, 12),
+            'expenseCategories' => Connection::fetchAll(
+                'SELECT COALESCE(c.name, \'Sin categoría\') AS category_name, COALESCE(SUM(e.amount),0) AS total
+                 FROM expenses e
+                 LEFT JOIN expense_categories c ON c.id = e.category_id
+                 WHERE e.property_id = :pid AND e.archived_at IS NULL
+                   AND spent_at >= DATE_FORMAT(CURDATE(), \'%Y-%m-01\')
+                 GROUP BY category_name ORDER BY total DESC LIMIT 6',
+                ['pid' => $pid]
+            ),
+            'expenseTrend' => $this->expenseTrend($pid),
             'canEdit' => PropertyContext::canEdit(),
         ]);
+    }
+
+    /** @return list<array{month:string,total:float}> */
+    private function expenseTrend(int $propertyId): array
+    {
+        $month = date('Y-m');
+        $rows = Connection::fetchAll(
+            'SELECT DATE_FORMAT(spent_at, \'%Y-%m\') AS ym, COALESCE(SUM(amount),0) AS total
+             FROM expenses
+             WHERE property_id = :pid AND archived_at IS NULL
+               AND spent_at >= DATE_SUB(STR_TO_DATE(CONCAT(:m, \'-01\'), \'%Y-%m-%d\'), INTERVAL 5 MONTH)
+               AND spent_at < DATE_ADD(STR_TO_DATE(CONCAT(:m2, \'-01\'), \'%Y-%m-%d\'), INTERVAL 1 MONTH)
+             GROUP BY ym',
+            ['pid' => $propertyId, 'm' => $month, 'm2' => $month]
+        );
+        $byMonth = [];
+        foreach ($rows as $row) {
+            $byMonth[(string) $row['ym']] = (float) $row['total'];
+        }
+        $cursor = new \DateTimeImmutable($month . '-01');
+        $cursor = $cursor->modify('-5 months');
+        $trend = [];
+        for ($i = 0; $i < 6; $i++) {
+            $key = $cursor->format('Y-m');
+            $trend[] = ['month' => $key, 'total' => $byMonth[$key] ?? 0.0];
+            $cursor = $cursor->modify('+1 month');
+        }
+
+        return $trend;
     }
 }

@@ -10,7 +10,15 @@ $pid = $property['public_id'];
         <h1><?= e($box['name']) ?> <span class="mono muted"><?= e($box['code']) ?></span></h1>
         <p><?= e($box['space_name'] ?? 'Sin ubicación') ?><?php if ($box['description']): ?> · <?= e($box['description']) ?><?php endif; ?></p>
     </div>
-    <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/boxes')) ?>">← Volver</a>
+    <div class="actions">
+        <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/boxes')) ?>">← Volver</a>
+        <?php if (!empty($canEdit)): ?>
+            <form method="post" action="<?= e(url('/properties/' . $pid . '/boxes/' . $box['public_id'] . '/archive')) ?>" onsubmit="return confirm('¿Eliminar esta caja?');">
+                <?= csrf_field() ?>
+                <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
+            </form>
+        <?php endif; ?>
+    </div>
 </div>
 <?php if (!empty($canEdit)): ?>
 <section class="panel">

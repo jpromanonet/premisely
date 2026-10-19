@@ -9,78 +9,185 @@ use DateTimeImmutable;
 use Premisely\Core\Database\Connection;
 use Premisely\Core\Http\Controller;
 use Premisely\Core\Http\Request;
+use Premisely\Modules\Routines\Controllers\RoutineController;
 use Premisely\Shared\PropertyContext;
 
 final class CalendarController extends Controller
 {
     public function index(Request $request, array $params): never
     {
-        $month = (string) ($request->query('month') ?: date('Y-m'));
-        try {
-            $start = new DateTimeImmutable($month . '-01');
-        } catch (\Exception) {
-            $start = new DateTimeImmutable('first day of this month');
-            $month = $start->format('Y-m');
-        }
-        $end = $start->modify('last day of this month');
         $pid = PropertyContext::propertyId();
-
-        $events = [];
-        foreach (Connection::fetchAll(
-            'SELECT title, due_date AS event_date, \'task\' AS type, status FROM tasks
-             WHERE property_id = :p AND archived_at IS NULL AND due_date BETWEEN :a AND :b',
-            ['p' => $pid, 'a' => $start->format('Y-m-d'), 'b' => $end->format('Y-m-d')]
-        ) as $row) {
-            $events[$row['event_date']][] = $row;
+        $today = date('Y-m-d');
+        $day = (string) ($request->query('day') ?: $today);
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
+            $day = $today;
         }
-        foreach (Connection::fetchAll(
-            'SELECT title, DATE(next_due_at) AS event_date, CONCAT(\'routine:\', category) AS type, \'pending\' AS status
-             FROM routines WHERE property_id = :p AND archived_at IS NULL AND is_active = 1
-               AND next_due_at IS NOT NULL AND DATE(next_due_at) BETWEEN :a AND :b',
-            ['p' => $pid, 'a' => $start->format('Y-m-d'), 'b' => $end->format('Y-m-d')]
-        ) as $row) {
-            $events[$row['event_date']][] = $row;
-        }
-        foreach (Connection::fetchAll(
-            'SELECT title, next_due_at AS event_date, \'maintenance\' AS type, \'pending\' AS status
-             FROM maintenance_plans WHERE property_id = :p AND archived_at IS NULL
-               AND next_due_at BETWEEN :a AND :b',
-            ['p' => $pid, 'a' => $start->format('Y-m-d'), 'b' => $end->format('Y-m-d')]
-        ) as $row) {
-            $events[$row['event_date']][] = $row;
-        }
-        foreach (Connection::fetchAll(
-            'SELECT name AS title, next_due_date AS event_date, \'service\' AS type, status
-             FROM property_services WHERE property_id = :p AND archived_at IS NULL
-               AND next_due_date BETWEEN :a AND :b',
-            ['p' => $pid, 'a' => $start->format('Y-m-d'), 'b' => $end->format('Y-m-d')]
-        ) as $row) {
-            $events[$row['event_date']][] = $row;
-        }
-        foreach (Connection::fetchAll(
-            'SELECT public_id, title, note_date AS event_date, \'note\' AS type, \'active\' AS status
-             FROM calendar_notes WHERE property_id = :p AND archived_at IS NULL
-               AND note_date BETWEEN :a AND :b',
-            ['p' => $pid, 'a' => $start->format('Y-m-d'), 'b' => $end->format('Y-m-d')]
-        ) as $row) {
-            $events[$row['event_date']][] = $row;
+        try {
+            $selected = new DateTimeImmutable($day);
+        } catch (\Exception) {
+            $selected = new DateTimeImmutable($today);
+            $day = $today;
         }
 
-        $days = [];
-        $cursor = $start;
-        while ($cursor <= $end) {
-            $key = $cursor->format('Y-m-d');
-            $days[] = ['date' => $key, 'events' => $events[$key] ?? []];
-            $cursor = $cursor->add(new DateInterval('P1D'));
+        $month = (string) ($request->query('month') ?: $selected->format('Y-m'));
+        try {
+            $monthStart = new DateTimeImmutable($month . '-01');
+        } catch (\Exception) {
+            $monthStart = $selected->modify('first day of this month');
+            $month = $monthStart->format('Y-m');
+        }
+        $monthEnd = $monthStart->modify('last day of this month');
+        $gridStart = $monthStart->modify('monday this week');
+        $gridEnd = $monthEnd->modify('sunday this week');
+
+        Connection::query(
+            'UPDATE tasks SET due_date = NULL, updated_at = NOW()
+             WHERE property_id = :p AND kind = \'reparacion\' AND due_date IS NOT NULL AND archived_at IS NULL',
+            ['p' => $pid]
+        );
+
+        $tasks = Connection::fetchAll(
+            'SELECT t.public_id, t.title, t.kind, t.status, t.priority, t.due_date,
+                    COALESCE(NULLIF(u.name, \'\'), m.display_name) AS assignee_name
+             FROM tasks t
+             LEFT JOIN property_members m ON m.id = t.assignee_member_id
+             LEFT JOIN users u ON u.id = m.user_id
+             WHERE t.property_id = :p AND t.archived_at IS NULL AND t.due_date = :day
+               AND (t.kind IS NULL OR t.kind <> \'reparacion\')
+             ORDER BY FIELD(t.status, \'pending\', \'in_progress\', \'done\', \'cancelled\'), t.title',
+            ['p' => $pid, 'day' => $day]
+        );
+        $undated = $day === $today
+            ? Connection::fetchAll(
+                'SELECT t.public_id, t.title, t.kind, t.status, t.priority, t.due_date,
+                        COALESCE(NULLIF(u.name, \'\'), m.display_name) AS assignee_name
+                 FROM tasks t
+                 LEFT JOIN property_members m ON m.id = t.assignee_member_id
+                 LEFT JOIN users u ON u.id = m.user_id
+                 WHERE t.property_id = :p AND t.archived_at IS NULL AND t.due_date IS NULL
+                   AND t.status IN (\'pending\', \'in_progress\')
+                   AND (t.kind IS NULL OR t.kind <> \'reparacion\')
+                 ORDER BY t.title',
+                ['p' => $pid]
+            )
+            : [];
+        $repairTasks = Connection::fetchAll(
+            'SELECT t.public_id, t.title, t.status, t.priority,
+                    COALESCE(NULLIF(u.name, \'\'), m.display_name) AS assignee_name
+             FROM tasks t
+             LEFT JOIN property_members m ON m.id = t.assignee_member_id
+             LEFT JOIN users u ON u.id = m.user_id
+             WHERE t.property_id = :p AND t.archived_at IS NULL AND t.kind = \'reparacion\'
+               AND t.status IN (\'pending\', \'in_progress\')
+             ORDER BY t.title',
+            ['p' => $pid]
+        );
+
+        $habitBoard = RoutineController::forDay($pid, $day);
+
+        $meals = Connection::fetchAll(
+            'SELECT public_id, slot, title, notes FROM meal_entries
+             WHERE property_id = :p AND meal_date = :day
+             ORDER BY FIELD(slot, \'desayuno\', \'almuerzo\', \'merienda\', \'cena\'), id',
+            ['p' => $pid, 'day' => $day]
+        );
+
+        \Premisely\Modules\Repairs\Controllers\RepairController::archiveCopiesOfTasks($pid);
+
+        $repairs = Connection::fetchAll(
+            'SELECT public_id, title, status, reported_at
+             FROM repair_records
+             WHERE property_id = :p AND archived_at IS NULL
+               AND status IN (\'pendiente\', \'en_curso\', \'open\', \'in_progress\')
+               AND (reported_at = :day OR (:today = :day2 AND reported_at < :day3))
+             ORDER BY reported_at, title',
+            ['p' => $pid, 'day' => $day, 'today' => $today, 'day2' => $day, 'day3' => $day]
+        );
+
+        $notes = Connection::fetchAll(
+            'SELECT public_id, title, notes FROM calendar_notes
+             WHERE property_id = :p AND archived_at IS NULL AND note_date = :day
+             ORDER BY title',
+            ['p' => $pid, 'day' => $day]
+        );
+
+        $marks = [];
+        foreach (Connection::fetchAll(
+            'SELECT due_date AS d, COUNT(*) AS n FROM tasks
+             WHERE property_id = :p AND archived_at IS NULL AND due_date BETWEEN :a AND :b
+               AND (kind IS NULL OR kind <> \'reparacion\')
+             GROUP BY due_date',
+            ['p' => $pid, 'a' => $gridStart->format('Y-m-d'), 'b' => $gridEnd->format('Y-m-d')]
+        ) as $row) {
+            $marks[$row['d']] = ($marks[$row['d']] ?? 0) + (int) $row['n'];
+        }
+        $habitRows = Connection::fetchAll(
+            'SELECT frequency_type, frequency_interval, schedule_day, next_due_at, created_at
+             FROM routines
+             WHERE property_id = :p AND archived_at IS NULL AND is_active = 1',
+            ['p' => $pid]
+        );
+        $markCursor = $gridStart;
+        while ($markCursor <= $gridEnd) {
+            $key = $markCursor->format('Y-m-d');
+            foreach ($habitRows as $habit) {
+                $habitType = (string) ($habit['frequency_type'] ?? '');
+                $habitDay = (int) ($habit['schedule_day'] ?? 0);
+                if (in_array($habitType, ['weekly', 'monthly'], true) && $habitDay > 0) {
+                    if (RoutineController::occursOn($habit, $key)) {
+                        $marks[$key] = ($marks[$key] ?? 0) + 1;
+                    }
+                    continue;
+                }
+                if (substr((string) ($habit['next_due_at'] ?? ''), 0, 10) === $key) {
+                    $marks[$key] = ($marks[$key] ?? 0) + 1;
+                }
+            }
+            $markCursor = $markCursor->add(new DateInterval('P1D'));
+        }
+        foreach (Connection::fetchAll(
+            'SELECT meal_date AS d, COUNT(*) AS n FROM meal_entries
+             WHERE property_id = :p AND meal_date BETWEEN :a AND :b
+             GROUP BY meal_date',
+            ['p' => $pid, 'a' => $gridStart->format('Y-m-d'), 'b' => $gridEnd->format('Y-m-d')]
+        ) as $row) {
+            $marks[$row['d']] = ($marks[$row['d']] ?? 0) + (int) $row['n'];
+        }
+
+        $weeks = [];
+        $cursor = $gridStart;
+        while ($cursor <= $gridEnd) {
+            $week = [];
+            for ($i = 0; $i < 7; $i++) {
+                $key = $cursor->format('Y-m-d');
+                $week[] = [
+                    'date' => $key,
+                    'inMonth' => $cursor->format('Y-m') === $month,
+                    'count' => $marks[$key] ?? 0,
+                ];
+                $cursor = $cursor->add(new DateInterval('P1D'));
+            }
+            $weeks[] = $week;
         }
 
         $this->view('calendar/index', [
-            'title' => 'Calendario',
+            'title' => 'Día a día',
             'property' => PropertyContext::property(),
+            'day' => $day,
+            'today' => $today,
             'month' => $month,
-            'days' => $days,
-            'prev' => $start->modify('-1 month')->format('Y-m'),
-            'next' => $start->modify('+1 month')->format('Y-m'),
+            'weeks' => $weeks,
+            'prevMonth' => $monthStart->modify('-1 month')->format('Y-m'),
+            'nextMonth' => $monthStart->modify('+1 month')->format('Y-m'),
+            'prevDay' => $selected->modify('-1 day')->format('Y-m-d'),
+            'nextDay' => $selected->modify('+1 day')->format('Y-m-d'),
+            'tasks' => $tasks,
+            'undated' => $undated,
+            'repairTasks' => $repairTasks,
+            'habits' => $habitBoard['items'],
+            'meals' => $meals,
+            'repairs' => $repairs,
+            'notes' => $notes,
             'canEdit' => PropertyContext::canEdit(),
         ]);
     }
@@ -122,8 +229,8 @@ final class CalendarController extends Controller
             ]
         );
         flash('success', 'Nota de calendario creada.');
-        $month = substr((string) $request->input('note_date', date('Y-m-d')), 0, 7);
-        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?month=' . $month);
+        $noteDate = (string) ($request->input('note_date') ?: date('Y-m-d'));
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . $noteDate);
     }
 
     public function editNote(Request $request, array $params): never
@@ -172,7 +279,7 @@ final class CalendarController extends Controller
             ]
         );
         flash('success', 'Nota actualizada.');
-        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?month=' . substr($noteDate, 0, 7));
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . $noteDate);
     }
 
     public function destroyNote(Request $request, array $params): never
@@ -193,7 +300,9 @@ final class CalendarController extends Controller
             ]
         );
         flash('success', 'Nota eliminada.');
-        $month = (string) ($request->input('month') ?: date('Y-m'));
-        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?month=' . $month);
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . date('Y-m-d'));
     }
 }

@@ -18,7 +18,7 @@ $pid = $property['public_id'];
                     <td><?= e($e['spent_at']) ?></td>
                     <td><?= e($e['title']) ?></td>
                     <td><?= e((string)($e['category_name'] ?? '—')) ?></td>
-                    <td><?= e((string)$e['amount']) ?> <?= e($e['currency']) ?></td>
+                    <td><?= e(format_money($e['amount'])) ?> <?= e($e['currency']) ?></td>
                     <td>
                         <?php if ($canEdit): ?>
                             <form method="post" action="<?= e(url('/properties/' . $pid . '/expenses/' . $e['public_id'] . '/archive')) ?>">

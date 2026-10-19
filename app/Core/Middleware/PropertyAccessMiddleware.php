@@ -7,6 +7,7 @@ namespace Premisely\Core\Middleware;
 use Premisely\Core\Auth\Auth;
 use Premisely\Core\Database\Connection;
 use Premisely\Core\Http\Request;
+use Premisely\Shared\PropertyContext;
 
 /**
  * Ensures the authenticated user is an active member of the property in the route.
@@ -65,6 +66,7 @@ final class PropertyAccessMiddleware
         $requestParams = $params;
         $GLOBALS['current_property'] = $property;
         $GLOBALS['current_member'] = $member;
+        PropertyContext::carryOpenTasks();
 
         return $next($request, $requestParams);
     }

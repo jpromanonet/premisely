@@ -15,32 +15,11 @@ final class MealController extends Controller
 {
     public function index(Request $request, array $params): never
     {
-        $weekStart = $this->weekStart((string) $request->query('week', ''));
-        $plan = $this->ensurePlan($weekStart);
-        $entries = Connection::fetchAll(
-            'SELECT * FROM meal_entries WHERE meal_plan_id = :id ORDER BY meal_date, FIELD(slot, \'desayuno\',\'almuerzo\',\'merienda\',\'cena\'), id',
-            ['id' => $plan['id']]
-        );
-        $byDate = [];
-        foreach ($entries as $e) {
-            $byDate[$e['meal_date']][] = $e;
+        $day = (string) $request->query('week', '');
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
+            $day = date('Y-m-d');
         }
-        $days = [];
-        $cursor = new DateTimeImmutable($weekStart);
-        for ($i = 0; $i < 7; $i++) {
-            $d = $cursor->add(new DateInterval('P' . $i . 'D'))->format('Y-m-d');
-            $days[] = $d;
-        }
-
-        $this->view('meals/index', [
-            'title' => 'Comidas',
-            'property' => PropertyContext::property(),
-            'plan' => $plan,
-            'weekStart' => $weekStart,
-            'days' => $days,
-            'byDate' => $byDate,
-            'canEdit' => PropertyContext::canEdit(),
-        ]);
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . $day);
     }
 
     public function create(Request $request, array $params): never
@@ -85,7 +64,11 @@ final class MealController extends Controller
             ]
         );
         flash('success', 'Comida agregada.');
-        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/meals?week=' . $weekStart);
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
+        $day = (string) ($request->input('meal_date') ?: date('Y-m-d'));
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . $day);
     }
 
     public function edit(Request $request, array $params): never
@@ -136,8 +119,11 @@ final class MealController extends Controller
             ]
         );
         flash('success', 'Comida actualizada.');
-        $weekStart = $this->weekStart((string) ($request->input('week_start') ?: $request->input('meal_date') ?: ''));
-        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/meals?week=' . $weekStart);
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
+        $day = (string) ($request->input('meal_date') ?: date('Y-m-d'));
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . $day);
     }
 
     public function destroy(Request $request, array $params): never

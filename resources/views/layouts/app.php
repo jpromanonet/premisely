@@ -6,7 +6,7 @@
     <title><?= e(($title ?? 'Premisely') . ' · Premisely') ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
     <link rel="icon" href="<?= e(asset('icons/logo-mark.svg')) ?>" type="image/svg+xml">
 </head>
@@ -31,7 +31,6 @@ $isActive = static function (string $needle) use ($currentPath): bool {
             <img class="brand__mark" src="<?= e(asset('icons/logo-mark.svg')) ?>" alt="">
             <span class="brand__text">
                 <span class="brand-wordmark">Premisely</span>
-                <span class="brand__tag">Administrá propiedades, espacios y rutinas.</span>
             </span>
         </a>
 
@@ -53,36 +52,23 @@ $isActive = static function (string $needle) use ($currentPath): bool {
                 <div class="nav-section">Consumibles</div>
                 <a class="<?= $isActive('/stock') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/stock')) ?>"><span class="nav__icon">◈</span> Stock</a>
                 <a class="<?= $isActive('/shopping') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/shopping')) ?>"><span class="nav__icon">☰</span> Compras</a>
-                <a class="<?= $isActive('/consumption') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/consumption')) ?>"><span class="nav__icon">↘</span> Consumo</a>
 
                 <div class="nav-section">Día a día</div>
-                <a class="<?= $isActive('/tasks') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/tasks')) ?>"><span class="nav__icon">☑</span> Tareas</a>
-                <a class="<?= $isActive('/routines') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/routines')) ?>"><span class="nav__icon">↻</span> Rutinas</a>
-                <a class="<?= $isActive('/cleaning') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/cleaning')) ?>"><span class="nav__icon">✦</span> Limpieza</a>
-                <a class="<?= $isActive('/laundry') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/laundry')) ?>"><span class="nav__icon">≋</span> Lavandería</a>
-                <a class="<?= $isActive('/meals') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/meals')) ?>"><span class="nav__icon">◉</span> Comidas</a>
-                <a class="<?= $isActive('/planning') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/planning')) ?>"><span class="nav__icon">▦</span> Plan semanal</a>
                 <a class="<?= $isActive('/calendar') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/calendar')) ?>"><span class="nav__icon">☉</span> Calendario</a>
-                <a class="<?= $isActive('/suggestions') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/suggestions')) ?>"><span class="nav__icon">💡</span> Sugerencias</a>
+                <a class="<?= $isActive('/routines') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/routines')) ?>"><span class="nav__icon">↻</span> Hábitos</a>
 
                 <div class="nav-section">Cuidado</div>
                 <a class="<?= $isActive('/maintenance') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/maintenance')) ?>"><span class="nav__icon">⚒</span> Mantenimiento</a>
-                <a class="<?= $isActive('/repairs') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/repairs')) ?>"><span class="nav__icon">🔧</span> Reparaciones</a>
-                <a class="<?= $isActive('/services') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/services')) ?>"><span class="nav__icon">◍</span> Servicios</a>
                 <a class="<?= $isActive('/providers') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/providers')) ?>"><span class="nav__icon">☎</span> Proveedores</a>
-
-                <div class="nav-section">Cajas y mudanzas</div>
-                <a class="<?= $isActive('/boxes') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/boxes')) ?>"><span class="nav__icon">❑</span> Cajas</a>
-                <a class="<?= $isActive('/moves') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/moves')) ?>"><span class="nav__icon">⇢</span> Mudanzas</a>
 
                 <div class="nav-section">Admin</div>
                 <a class="<?= $isActive('/expenses') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/expenses')) ?>"><span class="nav__icon">¤</span> Gastos</a>
                 <a class="<?= $isActive('/documents') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/documents')) ?>"><span class="nav__icon">▤</span> Documentos</a>
                 <a class="<?= $isActive('/reports') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/reports')) ?>"><span class="nav__icon">▥</span> Reportes</a>
-                <a class="<?= $isActive('/automations') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/automations')) ?>"><span class="nav__icon">⚡</span> Automatizaciones</a>
-                <a class="<?= $isActive('/importexport') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/importexport')) ?>"><span class="nav__icon">⇄</span> Importar / Exportar</a>
-                <a class="<?= $isActive('/api-tokens') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/api-tokens')) ?>"><span class="nav__icon">🔑</span> API</a>
-                <a class="<?= $isActive('/integrations') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/integrations')) ?>"><span class="nav__icon">⛓</span> Integraciones</a>
+
+                <div class="nav-section">Cajas y mudanzas</div>
+                <a class="<?= $isActive('/boxes') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/boxes')) ?>"><span class="nav__icon">❑</span> Cajas</a>
+                <a class="<?= $isActive('/moves') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/moves')) ?>"><span class="nav__icon">⇢</span> Mudanzas</a>
             <?php endif; ?>
 
             <div class="nav-section">Cuenta</div>
@@ -92,20 +78,20 @@ $isActive = static function (string $needle) use ($currentPath): bool {
                 <button class="btn btn-secondary" type="submit" style="width:100%">Salir</button>
             </form>
         </nav>
-
-        <div class="sidebar__footer">
-            <img src="<?= e(asset('icons/plant-books.svg')) ?>" alt="">
-            <p>Lugares más habitables, vidas más plenas.</p>
-        </div>
     </aside>
+    <button type="button" class="nav-backdrop" data-nav-close aria-label="Cerrar menú"></button>
 
     <div class="workspace">
         <header class="topbar">
+            <button type="button" class="nav-toggle" aria-controls="app-sidebar" aria-expanded="false" aria-label="Abrir menú">
+                <span></span><span></span><span></span>
+            </button>
             <?php if ($pid !== ''): ?>
                 <a class="property-switch" href="<?= e(url('/properties')) ?>">▣ <?= e($property['name'] ?? 'Propiedad') ?></a>
-                <form class="search" method="get" action="<?= e(url('/properties/' . $pid . '/search')) ?>">
+                <form class="search" method="get" action="<?= e(form_target()) ?>">
+                    <input type="hidden" name="r" value="/properties/<?= e($pid) ?>/search">
                     <label class="sr-only" for="q">Buscar</label>
-                    <input id="q" name="q" placeholder="Buscar espacios, objetos, tareas, documentos...">
+                    <input id="q" name="q" placeholder="Buscar espacios, objetos, tareas, documentos..." required>
                 </form>
             <?php else: ?>
                 <a class="property-switch" href="<?= e(url('/properties')) ?>">▣ Tus propiedades</a>
@@ -132,17 +118,11 @@ $isActive = static function (string $needle) use ($currentPath): bool {
             <?= $content ?? '' ?>
         </main>
 
-        <?php if ($pid !== ''): ?>
-        <nav class="mobile-nav" aria-label="Móvil">
-            <a class="<?= !$isActive('/inventory') && !$isActive('/stock') && !$isActive('/tasks') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/dashboard')) ?>"><span>⌂</span>Panel</a>
-            <a class="<?= $isActive('/inventory') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/inventory')) ?>"><span>▦</span>Inventario</a>
-            <a class="<?= $isActive('/stock') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/stock')) ?>"><span>◈</span>Stock</a>
-            <a class="<?= $isActive('/tasks') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/tasks')) ?>"><span>☑</span>Tareas</a>
-            <a href="<?= e(url('/properties/' . $pid . '/search')) ?>"><span>···</span>Más</a>
-        </nav>
-        <?php endif; ?>
     </div>
 </div>
+<button type="button" class="to-top" aria-label="Volver arriba">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14l6-6 6 6"/></svg>
+</button>
 <script src="<?= e(asset('js/app.js')) ?>"></script>
 </body>
 </html>

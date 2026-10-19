@@ -48,6 +48,60 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const navToggle = document.querySelector('.nav-toggle');
+  const setNavOpen = (open) => {
+    document.body.classList.toggle('nav-open', open);
+    if (navToggle) {
+      navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      navToggle.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+    }
+  };
+  navToggle?.addEventListener('click', () => {
+    setNavOpen(!document.body.classList.contains('nav-open'));
+  });
+  document.querySelectorAll('[data-nav-close]').forEach((el) => {
+    el.addEventListener('click', () => setNavOpen(false));
+  });
+  sidebar?.querySelectorAll('a[href]').forEach((link) => {
+    link.addEventListener('click', () => setNavOpen(false));
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      setNavOpen(false);
+    }
+  });
+
+  document.querySelectorAll('form.habit-schedule').forEach((form) => {
+    const select = form.querySelector('[name="frequency_type"]');
+    const apply = () => {
+      const value = select ? select.value : '';
+      form.classList.toggle('is-weekly', value === 'weekly');
+      form.classList.toggle('is-monthly', value === 'monthly');
+    };
+    select?.addEventListener('change', apply);
+    apply();
+  });
+
+  const toTop = document.querySelector('.to-top');
+  if (toTop) {
+    const toggleToTop = () => toTop.classList.toggle('is-on', window.scrollY > 480);
+    toggleToTop();
+    window.addEventListener('scroll', toggleToTop, { passive: true });
+    toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+
+  const focusId = location.hash.replace(/^#/, '');
+  if (focusId.startsWith('item-')) {
+    const target = document.getElementById(focusId);
+    if (target) {
+      const details = target.querySelector('details');
+      if (details) {
+        details.open = true;
+      }
+      target.scrollIntoView({ block: 'center' });
+    }
+  }
+
   initSortableTables();
 
   document.querySelectorAll('[data-copy-source]').forEach((button) => {
