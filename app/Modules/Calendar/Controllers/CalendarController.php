@@ -105,9 +105,9 @@ final class CalendarController extends Controller
         );
 
         $notes = Connection::fetchAll(
-            'SELECT public_id, title, notes FROM calendar_notes
+            'SELECT public_id, title, notes, completed_at, note_date FROM calendar_notes
              WHERE property_id = :p AND archived_at IS NULL AND note_date = :day
-             ORDER BY title',
+             ORDER BY completed_at IS NULL DESC, title',
             ['p' => $pid, 'day' => $day]
         );
 
@@ -130,17 +130,20 @@ final class CalendarController extends Controller
         $markCursor = $gridStart;
         while ($markCursor <= $gridEnd) {
             $key = $markCursor->format('Y-m-d');
-            foreach ($habitRows as $habit) {
-                $habitType = (string) ($habit['frequency_type'] ?? '');
-                $habitDay = (int) ($habit['schedule_day'] ?? 0);
-                if (in_array($habitType, ['weekly', 'monthly'], true) && $habitDay > 0) {
-                    if (RoutineController::occursOn($habit, $key)) {
+            // Habits only mark days that already arrived.
+            if ($key <= $today) {
+                foreach ($habitRows as $habit) {
+                    $habitType = (string) ($habit['frequency_type'] ?? '');
+                    $habitDay = (int) ($habit['schedule_day'] ?? 0);
+                    if (in_array($habitType, ['weekly', 'monthly'], true) && $habitDay > 0) {
+                        if (RoutineController::occursOn($habit, $key)) {
+                            $marks[$key] = ($marks[$key] ?? 0) + 1;
+                        }
+                        continue;
+                    }
+                    if (substr((string) ($habit['next_due_at'] ?? ''), 0, 10) === $key) {
                         $marks[$key] = ($marks[$key] ?? 0) + 1;
                     }
-                    continue;
-                }
-                if (substr((string) ($habit['next_due_at'] ?? ''), 0, 10) === $key) {
-                    $marks[$key] = ($marks[$key] ?? 0) + 1;
                 }
             }
             $markCursor = $markCursor->add(new DateInterval('P1D'));
@@ -280,6 +283,49 @@ final class CalendarController extends Controller
         );
         flash('success', 'Nota actualizada.');
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . $noteDate);
+    }
+
+    public function toggleNote(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar');
+        }
+
+        $key = (string) ($params['note'] ?? '');
+        $note = Connection::fetch(
+            'SELECT id, completed_at FROM calendar_notes
+             WHERE property_id = :pid AND (public_id = :key OR id = :id) AND archived_at IS NULL
+             LIMIT 1',
+            [
+                'pid' => PropertyContext::propertyId(),
+                'key' => $key,
+                'id' => ctype_digit($key) ? (int) $key : 0,
+            ]
+        );
+        if (!$note) {
+            flash('error', 'Nota no encontrada.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar');
+        }
+
+        if (empty($note['completed_at'])) {
+            Connection::query(
+                'UPDATE calendar_notes SET completed_at = NOW(), note_date = CURDATE() WHERE id = :id',
+                ['id' => $note['id']]
+            );
+            flash('success', 'Nota tachada.');
+        } else {
+            Connection::query(
+                'UPDATE calendar_notes SET completed_at = NULL, note_date = CURDATE() WHERE id = :id',
+                ['id' => $note['id']]
+            );
+            flash('success', 'Nota reabierta.');
+        }
+
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . date('Y-m-d'));
     }
 
     public function destroyNote(Request $request, array $params): never

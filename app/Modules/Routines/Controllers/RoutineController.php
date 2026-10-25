@@ -691,7 +691,10 @@ final class RoutineController extends Controller
         $paused = [];
         $dueTotal = 0;
         $dueDone = 0;
-        $isToday = $day === date('Y-m-d');
+        $today = date('Y-m-d');
+        $isToday = $day === $today;
+        // Day board: habits only appear once that calendar day has arrived (no peeking ahead).
+        $futureDay = !$all && $day > $today;
         $listPositions = [];
         $listCounts = ['daily' => 0, 'weekly' => 0, 'monthly' => 0];
         foreach ($rows as $row) {
@@ -712,10 +715,13 @@ final class RoutineController extends Controller
             $type = (string) $row['frequency_type'];
             $schedule = (int) ($row['schedule_day'] ?? 0);
             $pinned = in_array($type, ['weekly', 'monthly'], true) && $schedule > 0;
-            if ($pinned) {
+            if ($futureDay) {
+                $countsToday = false;
+                $row['overdue'] = false;
+            } elseif ($pinned) {
                 $onDay = self::occursOn($row, $day);
                 $countsToday = $onDay || $doneOnDay;
-                $row['overdue'] = $onDay && !$doneOnDay && $day < date('Y-m-d');
+                $row['overdue'] = $onDay && !$doneOnDay && $day < $today;
             } else {
                 $isDue = $dueOn === '' || $dueOn <= $day;
                 $countsToday = $isToday ? ($doneOnDay || $isDue) : ($doneOnDay || $dueOn === $day);

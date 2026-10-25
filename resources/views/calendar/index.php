@@ -266,6 +266,9 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
             <?php
             $items = $habits;
             $canToggle = !empty($canEdit) && $day === $today;
+            $emptyNote = $day > $today
+                ? 'Los hábitos aparecen cuando llega ese día.'
+                : 'Nada para marcar en este día.';
             require view_path('routines/_quests.php');
             ?>
         </section>
@@ -277,17 +280,29 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
             <div class="stack-cards">
                 <?php if ($notes === []): ?><p class="empty-note">Sin notas.</p><?php endif; ?>
                 <?php foreach ($notes as $note): ?>
-                    <article class="item-card">
+                    <?php $noteDone = !empty($note['completed_at']); ?>
+                    <article class="item-card<?= $noteDone ? ' is-done' : '' ?>">
                         <div>
                             <strong><?= e((string) $note['title']) ?></strong>
                             <?php if (!empty($note['notes'])): ?><p class="muted"><?= e((string) $note['notes']) ?></p><?php endif; ?>
+                            <?php if ($noteDone): ?>
+                                <?php $when = format_when($note['completed_at'] ?? ''); ?>
+                                <p class="muted">Tachada<?php if ($when !== ''): ?> el <?= e($when) ?><?php endif; ?></p>
+                            <?php endif; ?>
                         </div>
                         <?php if (!empty($canEdit)): ?>
-                            <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/notes/' . $note['public_id'] . '/delete')) ?>">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                                <button class="btn btn--ghost btn--sm" type="submit">Quitar</button>
-                            </form>
+                            <div class="actions" style="margin-top:0">
+                                <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/notes/' . $note['public_id'] . '/toggle')) ?>">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                                    <button class="btn btn--sm" type="submit"><?= $noteDone ? 'Reabrir' : 'Hecho' ?></button>
+                                </form>
+                                <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/notes/' . $note['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar esta nota?');">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                                    <button class="btn btn--ghost btn--sm" type="submit">Quitar</button>
+                                </form>
+                            </div>
                         <?php endif; ?>
                     </article>
                 <?php endforeach; ?>

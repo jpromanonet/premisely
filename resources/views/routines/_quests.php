@@ -41,20 +41,24 @@ $when = static function (array $habit) use ($frequencies): string {
             $freqKey = 'weekly:1';
         }
         ?>
-        <article class="quest<?= $checked ? ' is-done' : '' ?><?= empty($habit['due_today']) ? ' is-later' : '' ?>">
+        <?php
+        $habitId = (string) $habit['public_id'];
+        $habitBack = preg_replace('/#.*$/', '', (string) $back) . '#habit-' . $habitId;
+        ?>
+        <article class="quest<?= $checked ? ' is-done' : '' ?><?= empty($habit['due_today']) ? ' is-later' : '' ?>" id="habit-<?= e($habitId) ?>">
             <?php if (!empty($canToggle) && !empty($habit['due_today'])): ?>
-                <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . ($checked ? '/undo' : '/execute'))) ?>">
+                <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habitId . ($checked ? '/undo' : '/execute'))) ?>">
                     <?= csrf_field() ?>
-                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                    <input type="hidden" name="redirect" value="<?= e($habitBack) ?>">
                     <button class="quest-check" type="submit" aria-label="<?= $checked ? 'Desmarcar' : 'Hecho' ?>"><?= $checked ? '✓' : '' ?></button>
                 </form>
             <?php else: ?>
                 <span class="quest-check<?= $checked ? ' is-on' : '' ?>"><?= $checked ? '✓' : '' ?></span>
             <?php endif; ?>
             <?php if ($manage && !empty($canEdit)): ?>
-                <form class="quest-order" method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/reorder')) ?>">
+                <form class="quest-order" method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habitId . '/reorder')) ?>">
                     <?= csrf_field() ?>
-                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                    <input type="hidden" name="redirect" value="<?= e($habitBack) ?>">
                     <input type="hidden" name="view" value="<?= e($view) ?>">
                     <input class="quest-pos" type="number" name="position" min="1" max="<?= count($items) ?>" value="<?= $position ?>" aria-label="Orden" onchange="this.form.submit()">
                     <button type="submit" name="direction" value="up" aria-label="Subir">↑</button>
@@ -96,24 +100,24 @@ $when = static function (array $habit) use ($frequencies): string {
             </div>
             <?php if ($manage && !empty($canEdit)): ?>
                 <div class="quest-tools">
-                    <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/frequency')) ?>">
+                    <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habitId . '/frequency')) ?>">
                         <?= csrf_field() ?>
-                        <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                        <input type="hidden" name="redirect" value="<?= e($habitBack) ?>">
                         <select class="quest-freq" name="frequency" aria-label="Frecuencia" onchange="this.form.submit()">
                             <?php foreach ($frequencies as $value => $label): ?>
                                 <option value="<?= e($value) ?>" <?= $freqKey === $value ? 'selected' : '' ?>><?= e($label) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </form>
-                    <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este hábito?');">
+                    <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habitId . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este hábito?');">
                         <?= csrf_field() ?>
-                        <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                        <input type="hidden" name="redirect" value="<?= e($habitBack) ?>">
                         <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
                     </form>
                 </div>
             <?php elseif (!empty($canEdit)): ?>
                 <div class="quest-tools">
-                    <a class="quest-edit" href="<?= e(url('/properties/' . $pid . '/routines/' . $habit['public_id'] . '/edit')) ?>">Editar</a>
+                    <a class="quest-edit" href="<?= e(url('/properties/' . $pid . '/routines/' . $habitId . '/edit')) ?>">Editar</a>
                 </div>
             <?php endif; ?>
         </article>

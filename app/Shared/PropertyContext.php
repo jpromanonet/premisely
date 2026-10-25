@@ -57,6 +57,13 @@ final class PropertyContext
                AND due_date < :before',
             ['today' => $today, 'before' => $today, 'p' => $pid]
         );
+        Connection::query(
+            'UPDATE calendar_notes SET note_date = :today
+             WHERE property_id = :p AND archived_at IS NULL
+               AND completed_at IS NULL
+               AND note_date < :before',
+            ['today' => $today, 'before' => $today, 'p' => $pid]
+        );
     }
 
     /** @return list<array<string, mixed>> */

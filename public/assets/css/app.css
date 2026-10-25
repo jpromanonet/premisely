@@ -469,6 +469,7 @@ td.row-actions { vertical-align: top; text-align: right; white-space: nowrap; pa
 .note-cut .section-label { color: #6B5535; }
 .item-card--habit { border-left: 4px solid var(--brand); }
 .item-card.is-done { opacity: 0.55; }
+.item-card.is-done strong { text-decoration: line-through; color: var(--muted); font-weight: 500; }
 .empty-note { margin: 0; color: var(--muted); }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
 .chip {
@@ -481,6 +482,7 @@ td.row-actions { vertical-align: top; text-align: right; white-space: nowrap; pa
 .quest {
   display: flex; align-items: center; gap: 12px; padding: 10px 12px;
   background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  scroll-margin-top: 96px;
 }
 .quest form { margin: 0; }
 .quest-check {
