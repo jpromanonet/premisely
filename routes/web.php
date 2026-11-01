@@ -202,7 +202,7 @@ $router->post('/properties/{property}/expenses/fixed/{fixed}', [ExpenseControlle
 $router->post('/properties/{property}/expenses/fixed/{fixed}/delete', [ExpenseController::class, 'destroyFixed'], $propertyCsrf);
 $router->get('/properties/{property}/expenses/{expense}/edit', [ExpenseController::class, 'edit'], $property);
 $router->post('/properties/{property}/expenses/{expense}', [ExpenseController::class, 'update'], $propertyCsrf);
-$router->post('/properties/{property}/expenses/{expense}/archive', [ExpenseController::class, 'archive'], $propertyCsrf);
+$router->post('/properties/{property}/expenses/{expense}/delete', [ExpenseController::class, 'destroy'], $propertyCsrf);
 
 // Documents
 $router->get('/properties/{property}/documents', [DocumentController::class, 'index'], $property);

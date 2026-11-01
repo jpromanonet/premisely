@@ -10,6 +10,7 @@ use Premisely\Core\Http\Controller;
 use Premisely\Core\Http\Request;
 use Premisely\Modules\Routines\Controllers\RoutineController;
 use Premisely\Modules\Stock\Services\StockService;
+use Premisely\Shared\ExpenseHelper;
 use Premisely\Shared\PropertyContext;
 
 final class DashboardController extends Controller
@@ -128,17 +129,26 @@ final class DashboardController extends Controller
                  WHERE property_id = :pid AND archived_at IS NULL
                    AND spent_at >= DATE_FORMAT(CURDATE(), \'%Y-%m-01\')',
                 ['pid' => $pid]
-            ) ?: 0),
-            'expenseCategories' => Connection::fetchAll(
-                'SELECT COALESCE(c.name, \'Sin categoría\') AS category_name, COALESCE(SUM(e.amount),0) AS total
-                 FROM expenses e
-                 LEFT JOIN expense_categories c ON c.id = e.category_id
-                 WHERE e.property_id = :pid AND e.archived_at IS NULL
-                   AND spent_at >= DATE_FORMAT(CURDATE(), \'%Y-%m-01\')
-                 GROUP BY category_name ORDER BY total DESC LIMIT 6',
-                ['pid' => $pid]
+            ) ?: 0) + ExpenseHelper::fixedTotalForMonth($pid, date('Y-m')),
+            'expenseCategories' => array_slice(
+                ExpenseHelper::mergeFixedIntoCategories(
+                    $pid,
+                    date('Y-m'),
+                    Connection::fetchAll(
+                        'SELECT COALESCE(c.name, \'Sin categoría\') AS category_name, COALESCE(SUM(e.amount),0) AS total
+                         FROM expenses e
+                         LEFT JOIN expense_categories c ON c.id = e.category_id
+                         WHERE e.property_id = :pid AND e.archived_at IS NULL
+                           AND spent_at >= DATE_FORMAT(CURDATE(), \'%Y-%m-01\')
+                         GROUP BY category_name ORDER BY total DESC',
+                        ['pid' => $pid]
+                    )
+                ),
+                0,
+                6
             ),
-            'expenseTrend' => $this->expenseTrend($pid),
+            'expenseTrend' => ExpenseHelper::mergeFixedIntoTrend($pid, $this->expenseTrend($pid)),
+            'fixedExpenses' => ExpenseHelper::activeFixed($pid),
             'canEdit' => PropertyContext::canEdit(),
         ]);
     }

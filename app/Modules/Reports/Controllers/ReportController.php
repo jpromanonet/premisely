@@ -8,6 +8,7 @@ use Premisely\Core\Database\Connection;
 use Premisely\Core\Http\Controller;
 use Premisely\Core\Http\Request;
 use Premisely\Modules\Stock\Services\StockService;
+use Premisely\Shared\ExpenseHelper;
 use Premisely\Shared\PropertyContext;
 
 final class ReportController extends Controller
@@ -47,20 +48,30 @@ final class ReportController extends Controller
             ),
         ];
 
-        $expenses = [
-            'month_total' => (float) Connection::fetchColumn(
-                'SELECT COALESCE(SUM(amount),0) FROM expenses
-                 WHERE property_id = :p AND archived_at IS NULL AND DATE_FORMAT(spent_at, \'%Y-%m\') = :m',
-                ['p' => $pid, 'm' => $month]
-            ),
-            'by_category' => Connection::fetchAll(
+        $movementTotal = (float) Connection::fetchColumn(
+            'SELECT COALESCE(SUM(amount),0) FROM expenses
+             WHERE property_id = :p AND archived_at IS NULL AND DATE_FORMAT(spent_at, \'%Y-%m\') = :m',
+            ['p' => $pid, 'm' => $month]
+        );
+        $fixedTotal = ExpenseHelper::fixedTotalForMonth($pid, $month);
+        $byCategory = ExpenseHelper::mergeFixedIntoCategories(
+            $pid,
+            $month,
+            Connection::fetchAll(
                 'SELECT COALESCE(c.name, \'Sin categoría\') AS category_name, COALESCE(SUM(e.amount),0) AS total
                  FROM expenses e
                  LEFT JOIN expense_categories c ON c.id = e.category_id
                  WHERE e.property_id = :p AND e.archived_at IS NULL AND DATE_FORMAT(e.spent_at, \'%Y-%m\') = :m
                  GROUP BY category_name ORDER BY total DESC',
                 ['p' => $pid, 'm' => $month]
-            ),
+            )
+        );
+
+        $expenses = [
+            'month_total' => $movementTotal + $fixedTotal,
+            'movements_total' => $movementTotal,
+            'fixed_total' => $fixedTotal,
+            'by_category' => $byCategory,
         ];
 
         $trendRows = Connection::fetchAll(
@@ -84,6 +95,11 @@ final class ReportController extends Controller
             $trend[] = ['month' => $key, 'total' => $byMonth[$key] ?? 0.0];
             $cursor = $cursor->modify('+1 month');
         }
+        $trend = ExpenseHelper::mergeFixedIntoTrend($pid, $trend);
+        $fixedExpenses = array_values(array_filter(
+            ExpenseHelper::activeFixed($pid),
+            static fn (array $fixed): bool => ExpenseHelper::fixedAppliesInMonth($fixed, $month)
+        ));
 
         $this->view('reports/index', [
             'title' => 'Reportes',
@@ -92,6 +108,7 @@ final class ReportController extends Controller
             'inventory' => $inventory,
             'stock' => $stock,
             'expenses' => $expenses,
+            'fixedExpenses' => $fixedExpenses,
             'trend' => $trend,
             'tasksDone' => (int) Connection::fetchColumn(
                 'SELECT COUNT(*) FROM tasks

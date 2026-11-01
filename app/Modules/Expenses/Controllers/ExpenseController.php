@@ -117,7 +117,7 @@ final class ExpenseController extends Controller
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/expenses');
     }
 
-    public function archive(Request $request, array $params): never
+    public function destroy(Request $request, array $params): never
     {
         if (!PropertyContext::canEdit()) {
             flash('error', 'No tenés permisos.');
@@ -126,11 +126,11 @@ final class ExpenseController extends Controller
 
         $expense = $this->findExpense($params['expense'] ?? '');
         Connection::query(
-            'UPDATE expenses SET archived_at = NOW(), updated_at = NOW() WHERE id = :id',
-            ['id' => $expense['id']]
+            'DELETE FROM expenses WHERE id = :id AND property_id = :pid',
+            ['id' => $expense['id'], 'pid' => PropertyContext::propertyId()]
         );
-        ActivityLogger::log(PropertyContext::propertyId(), 'expense', (int) $expense['id'], 'archived');
-        flash('success', 'Gasto archivado.');
+        ActivityLogger::log(PropertyContext::propertyId(), 'expense', (int) $expense['id'], 'deleted');
+        flash('success', 'Movimiento eliminado.');
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/expenses');
     }
 
@@ -349,7 +349,7 @@ final class ExpenseController extends Controller
     {
         $expense = Connection::fetch(
             'SELECT * FROM expenses
-             WHERE property_id = :pid AND archived_at IS NULL
+             WHERE property_id = :pid
                AND (public_id = :key OR id = :id)
              LIMIT 1',
             [

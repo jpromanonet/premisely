@@ -4,11 +4,14 @@
 /** @var array<string,mixed> $inventory */
 /** @var array<string,mixed> $stock */
 /** @var array<string,mixed> $expenses */
+/** @var list<array<string,mixed>> $fixedExpenses */
 /** @var list<array{month:string,total:float}> $trend */
 /** @var int $tasksDone */
 /** @var int $habitsDone */
 /** @var int $shopping */
 $pid = $property['public_id'];
+$fixedExpenses = $fixedExpenses ?? [];
+$freqLabels = ['monthly' => 'Mensual', 'bimonthly' => 'Bimestral', 'quarterly' => 'Trimestral', 'yearly' => 'Anual'];
 $currency = (string) ($property['currency'] ?? 'ARS');
 $monthNames = [1 => 'ene', 2 => 'feb', 3 => 'mar', 4 => 'abr', 5 => 'may', 6 => 'jun', 7 => 'jul', 8 => 'ago', 9 => 'sep', 10 => 'oct', 11 => 'nov', 12 => 'dic'];
 $statusLabels = [
@@ -48,6 +51,7 @@ $stockTotal = max(1, (int) $stock['count']);
     <div class="metric">
         <span>Gastos</span>
         <strong><?= e($currency) ?> <?= e(format_money($expenses['month_total'])) ?></strong>
+        <p>Fijos <?= e(format_money($expenses['fixed_total'] ?? 0)) ?> · Movimientos <?= e(format_money($expenses['movements_total'] ?? 0)) ?></p>
     </div>
     <div class="metric">
         <span>Inventario</span>
@@ -65,6 +69,32 @@ $stockTotal = max(1, (int) $stock['count']);
         <p><?= (int) $tasksDone ?> tareas · <?= (int) $habitsDone ?> hábitos</p>
     </div>
 </div>
+
+<section class="panel">
+    <div class="section-head">
+        <h2>Gastos fijos del mes</h2>
+        <a href="<?= e(url('/properties/' . $pid . '/expenses')) ?>">Ver gastos</a>
+    </div>
+    <?php if ($fixedExpenses === []): ?>
+        <p class="empty-note">Sin gastos fijos para este mes.</p>
+    <?php else: ?>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Nombre</th><th>Categoría</th><th>Frecuencia</th><th>Monto</th></tr></thead>
+                <tbody>
+                <?php foreach ($fixedExpenses as $f): ?>
+                    <tr>
+                        <td><?= e((string) $f['title']) ?></td>
+                        <td><?= e((string) ($f['category_name'] ?? '—')) ?></td>
+                        <td><?= e($freqLabels[$f['frequency_type'] ?? ''] ?? (string) ($f['frequency_type'] ?? '')) ?></td>
+                        <td><?= e(format_money($f['amount'])) ?> <?= e((string) ($f['currency'] ?? $currency)) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</section>
 
 <div class="report-grid">
     <section class="panel">

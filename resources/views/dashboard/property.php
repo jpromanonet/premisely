@@ -12,7 +12,10 @@
 /** @var float $monthExpenses */
 /** @var list<array<string,mixed>> $expenseCategories */
 /** @var list<array{month:string,total:float}> $expenseTrend */
+/** @var list<array<string,mixed>> $fixedExpenses */
 $pid = $property['public_id'];
+$fixedExpenses = $fixedExpenses ?? [];
+$freqLabels = ['monthly' => 'Mensual', 'bimonthly' => 'Bimestral', 'quarterly' => 'Trimestral', 'yearly' => 'Anual'];
 $months = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 $weekdays = [1 => 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
 $heading = ucfirst($weekdays[(int) date('N')]) . ' ' . date('j') . ' de ' . $months[(int) date('n')];
@@ -133,6 +136,32 @@ $currentMonth = date('Y-m');
         <?php endif; ?>
     </section>
 </div>
+
+<section class="panel">
+    <div class="section-head">
+        <h2>Gastos fijos</h2>
+        <a href="<?= e(url('/properties/' . $pid . '/expenses')) ?>">Ver gastos</a>
+    </div>
+    <?php if ($fixedExpenses === []): ?>
+        <p class="empty-note">Sin gastos fijos activos.</p>
+    <?php else: ?>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Nombre</th><th>Categoría</th><th>Frecuencia</th><th>Monto</th></tr></thead>
+                <tbody>
+                <?php foreach ($fixedExpenses as $f): ?>
+                    <tr>
+                        <td><?= e((string) $f['title']) ?></td>
+                        <td><?= e((string) ($f['category_name'] ?? '—')) ?></td>
+                        <td><?= e($freqLabels[$f['frequency_type'] ?? ''] ?? (string) ($f['frequency_type'] ?? '')) ?></td>
+                        <td><?= e(format_money($f['amount'])) ?> <?= e((string) ($f['currency'] ?? $currency)) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</section>
 
 <section class="panel">
     <h2>Stock</h2>

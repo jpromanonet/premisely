@@ -294,7 +294,7 @@ th { color: var(--muted); font-weight: 700; font-size: 0.75rem; letter-spacing: 
 .th-sortable.is-sorted-asc::after { content: '↑'; opacity: 0.9; color: var(--brand); }
 .th-sortable.is-sorted-desc::after { content: '↓'; opacity: 0.9; color: var(--brand); }
 td.mono, .table-mono td:first-child { font-size: 0.88rem; }
-td.row-actions { vertical-align: middle; text-align: right; white-space: nowrap; }
+td.row-actions { vertical-align: top; text-align: right; white-space: nowrap; padding-top: 0.45rem; }
 .row-actions__group { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.5rem; }
 .row-actions__group form { display: inline-flex; margin: 0; }
 

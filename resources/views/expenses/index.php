@@ -38,13 +38,15 @@ $frequencies = $frequencies ?? [];
                         <td><?= e(format_money($f['amount'])) ?> <?= e($f['currency']) ?></td>
                         <td><?= e((string) ($f['next_due_date'] ?? '—')) ?></td>
                         <td><?= !empty($f['is_active']) ? 'Activo' : 'Pausado' ?></td>
-                        <td class="actions" style="white-space:nowrap">
+                        <td class="row-actions">
                             <?php if ($canEdit): ?>
-                                <a class="btn btn--ghost btn--sm" href="<?= e(url('/properties/' . $pid . '/expenses/fixed/' . $f['public_id'] . '/edit')) ?>">Editar</a>
-                                <form method="post" action="<?= e(url('/properties/' . $pid . '/expenses/fixed/' . $f['public_id'] . '/delete')) ?>" style="display:inline" onsubmit="return confirm('¿Eliminar este gasto fijo?');">
-                                    <?= csrf_field() ?>
-                                    <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
-                                </form>
+                                <div class="row-actions__group">
+                                    <a class="btn btn--ghost btn--sm" href="<?= e(url('/properties/' . $pid . '/expenses/fixed/' . $f['public_id'] . '/edit')) ?>">Editar</a>
+                                    <form method="post" action="<?= e(url('/properties/' . $pid . '/expenses/fixed/' . $f['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este gasto fijo?');">
+                                        <?= csrf_field() ?>
+                                        <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
+                                    </form>
+                                </div>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -70,13 +72,15 @@ $frequencies = $frequencies ?? [];
                     <td><?= e($e['title']) ?></td>
                     <td><?= e((string) ($e['category_name'] ?? '—')) ?></td>
                     <td><?= e(format_money($e['amount'])) ?> <?= e($e['currency']) ?></td>
-                    <td class="actions" style="white-space:nowrap">
+                    <td class="row-actions">
                         <?php if ($canEdit): ?>
-                            <a class="btn btn--ghost btn--sm" href="<?= e(url('/properties/' . $pid . '/expenses/' . $e['public_id'] . '/edit')) ?>">Editar</a>
-                            <form method="post" action="<?= e(url('/properties/' . $pid . '/expenses/' . $e['public_id'] . '/archive')) ?>" style="display:inline">
-                                <?= csrf_field() ?>
-                                <button class="btn btn--ghost btn--sm" type="submit">Archivar</button>
-                            </form>
+                            <div class="row-actions__group">
+                                <a class="btn btn--ghost btn--sm" href="<?= e(url('/properties/' . $pid . '/expenses/' . $e['public_id'] . '/edit')) ?>">Editar</a>
+                                <form method="post" action="<?= e(url('/properties/' . $pid . '/expenses/' . $e['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este movimiento?');">
+                                    <?= csrf_field() ?>
+                                    <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
+                                </form>
+                            </div>
                         <?php endif; ?>
                     </td>
                 </tr>
