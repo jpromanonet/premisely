@@ -23,10 +23,25 @@
 <?php else: ?>
     <div class="property-stack">
         <?php foreach ($properties as $p): ?>
-            <a class="property-card" href="<?= e(url('/properties/' . $p['public_id'] . '/dashboard')) ?>">
-                <h3><?= e($p['name']) ?></h3>
-                <p><?= e(property_type_label($p['type'] ?? null)) ?> · <?= e(property_tenure_label($p['tenure'] ?? null)) ?></p>
-            </a>
+            <?php
+            $role = (string) ($p['role'] ?? 'viewer');
+            $canManage = in_array($role, ['owner', 'admin'], true);
+            $canEdit = in_array($role, ['owner', 'admin', 'member', 'collaborator'], true);
+            ?>
+            <div class="property-card">
+                <a class="property-card__main" href="<?= e(url('/properties/' . $p['public_id'] . '/dashboard')) ?>">
+                    <h3><?= e($p['name']) ?></h3>
+                    <p><?= e(property_type_label($p['type'] ?? null)) ?> · <?= e(property_tenure_label($p['tenure'] ?? null)) ?></p>
+                </a>
+                <?php if ($canEdit || $canManage): ?>
+                    <div class="property-card__actions">
+                        <a class="btn btn--ghost btn--sm" href="<?= e(url('/properties/' . $p['public_id'] . '/edit')) ?>">Editar</a>
+                        <?php if ($canManage): ?>
+                            <a class="btn btn--danger btn--sm" href="<?= e(url('/properties/' . $p['public_id'] . '/edit')) ?>#eliminar">Eliminar</a>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
         <?php endforeach; ?>
     </div>
 <?php endif; ?>

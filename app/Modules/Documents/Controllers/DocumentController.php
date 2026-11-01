@@ -103,7 +103,7 @@ final class DocumentController extends Controller
         $this->redirect('/properties/' . $property['public_id'] . '/documents');
     }
 
-    public function archive(Request $request, array $params): never
+    public function destroy(Request $request, array $params): never
     {
         if (!PropertyContext::canEdit()) {
             flash('error', 'No tenés permisos.');
@@ -113,7 +113,7 @@ final class DocumentController extends Controller
         $key = $params['document'] ?? '';
         $doc = Connection::fetch(
             'SELECT * FROM documents
-             WHERE property_id = :pid AND archived_at IS NULL
+             WHERE property_id = :pid
                AND (public_id = :key OR id = :id)
              LIMIT 1',
             [
@@ -128,12 +128,18 @@ final class DocumentController extends Controller
             $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/documents');
         }
 
-        Connection::query(
-            'UPDATE documents SET archived_at = NOW() WHERE id = :id',
-            ['id' => $doc['id']]
-        );
-        ActivityLogger::log(PropertyContext::propertyId(), 'document', (int) $doc['id'], 'archived');
-        flash('success', 'Documento archivado.');
+        $path = (string) ($doc['file_path'] ?? '');
+        if ($path !== '') {
+            $storage = new LocalStorage((string) config('storage.root'));
+            $storage->delete($path);
+        }
+
+        Connection::query('DELETE FROM documents WHERE id = :id AND property_id = :pid', [
+            'id' => $doc['id'],
+            'pid' => PropertyContext::propertyId(),
+        ]);
+        ActivityLogger::log(PropertyContext::propertyId(), 'document', (int) $doc['id'], 'deleted');
+        flash('success', 'Documento eliminado.');
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/documents');
     }
 }

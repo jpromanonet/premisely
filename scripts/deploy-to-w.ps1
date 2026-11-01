@@ -1,4 +1,4 @@
-# Deploy Premisely to W:\premisely (192.168.100.50 web root)
+# Deploy Premisely to W:\premisely (legacy) / server 192.168.18.50 + Tailscale 100.108.176.52
 
 $ErrorActionPreference = 'Stop'
 $src = Split-Path -Parent $PSScriptRoot
@@ -38,4 +38,4 @@ Copy-Item (Join-Path $src '.env') (Join-Path $dest '.env') -Force
     New-Item -ItemType Directory -Force -Path (Join-Path $dest $_) | Out-Null
 }
 
-Write-Host "Deployed. Open http://192.168.100.50/premisely/index.php?r=/install"
+Write-Host "Deployed. Open http://192.168.18.50/premisely/ or http://100.108.176.52/premisely/"

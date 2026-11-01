@@ -206,9 +206,13 @@ h1, h2, h3, .brand-wordmark, .display {
 
 .property-stack { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .property-card {
-  display: block; padding: 16px 18px; border-radius: 14px; border: 1px solid transparent;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 18px; border-radius: 14px; border: 1px solid transparent;
   text-decoration: none; color: var(--ink);
 }
+.property-card__main { flex: 1 1 auto; min-width: 0; text-decoration: none; color: inherit; }
+.property-card__main:hover { text-decoration: none; }
+.property-card__actions { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: flex-end; flex: 0 0 auto; }
 .property-card h3 { margin: 0 0 0.25rem; }
 .property-card p { margin: 0; color: var(--muted); }
 .property-card:hover { text-decoration: none; filter: brightness(0.97); }

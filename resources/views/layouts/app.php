@@ -62,6 +62,7 @@ $isActive = static function (string $needle) use ($currentPath): bool {
                 <a class="<?= $isActive('/providers') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/providers')) ?>"><span class="nav__icon">☎</span> Proveedores</a>
 
                 <div class="nav-section">Admin</div>
+                <a class="<?= preg_match('#/properties/' . preg_quote($pid, '#') . '/edit$#', $currentPath) ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/edit')) ?>"><span class="nav__icon">✎</span> Editar propiedad</a>
                 <a class="<?= $isActive('/expenses') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/expenses')) ?>"><span class="nav__icon">¤</span> Gastos</a>
                 <a class="<?= $isActive('/documents') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/documents')) ?>"><span class="nav__icon">▤</span> Documentos</a>
                 <a class="<?= $isActive('/reports') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/reports')) ?>"><span class="nav__icon">▥</span> Reportes</a>

@@ -80,6 +80,61 @@ if (!function_exists('view_path')) {
     }
 }
 
+if (!function_exists('app_base_path')) {
+    /** Path prefix from APP_URL or SCRIPT_NAME, e.g. /premisely — never includes host. */
+    function app_base_path(): string
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $appUrl = (string) config('app.url', '');
+        if ($appUrl !== '') {
+            $urlPath = parse_url($appUrl, PHP_URL_PATH);
+            if (is_string($urlPath) && $urlPath !== '' && $urlPath !== '/') {
+                $cached = rtrim($urlPath, '/');
+                return $cached;
+            }
+        }
+
+        $script = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+        if ($script === '/' || $script === '\\' || $script === '.') {
+            $cached = '';
+            return $cached;
+        }
+        $cached = rtrim($script, '/');
+        return $cached;
+    }
+}
+
+if (!function_exists('app_base_url')) {
+    /**
+     * Absolute app root using the current request host (LAN / Tailscale).
+     * Falls back to APP_URL host only when there is no HTTP_HOST (CLI).
+     */
+    function app_base_url(): string
+    {
+        $basePath = app_base_path();
+        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || ((string) ($_SERVER['SERVER_PORT'] ?? '') === '443')
+            || (strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https');
+        $scheme = $https ? 'https' : 'http';
+        $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+
+        if ($host !== '') {
+            return $scheme . '://' . $host . $basePath;
+        }
+
+        $appUrl = rtrim((string) config('app.url', ''), '/');
+        if ($appUrl !== '') {
+            return $appUrl;
+        }
+
+        return $basePath;
+    }
+}
+
 if (!function_exists('url')) {
     function url(string $path = '/', array $query = []): string
     {
@@ -99,17 +154,10 @@ if (!function_exists('url')) {
             $query = array_merge($embedded, $query);
         }
 
-        $appUrl = rtrim((string) config('app.url', ''), '/');
-        if ($appUrl === '') {
-            $script = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
-            $appUrl = ($script === '/' || $script === '\\' || $script === '.') ? '' : rtrim($script, '/');
-        }
+        $appUrl = app_base_url();
 
         // Compatible con Apache sin rewrite: /premisely/index.php?r=/ruta
-        $useQueryRouting = true;
-        $href = $useQueryRouting
-            ? $appUrl . '/index.php?r=' . rawurlencode($path === '' ? '/' : $path)
-            : $appUrl . ($path === '/' ? '/' : $path);
+        $href = $appUrl . '/index.php?r=' . rawurlencode($path === '' ? '/' : $path);
 
         if ($query !== []) {
             $href .= (str_contains($href, '?') ? '&' : '?') . http_build_query($query);
@@ -133,9 +181,8 @@ if (!function_exists('form_target')) {
 if (!function_exists('asset')) {
     function asset(string $path): string
     {
-        $appUrl = rtrim((string) config('app.url', ''), '/');
         $rel = 'public/assets/' . ltrim($path, '/');
-        $url = $appUrl . '/' . $rel;
+        $url = app_base_url() . '/' . $rel;
         $file = base_path($rel);
         if (is_file($file)) {
             $url .= '?v=' . filemtime($file);

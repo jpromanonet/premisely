@@ -15,13 +15,26 @@
                 <thead><tr><th>Nombre</th><th>Tipo</th><th>Tenencia</th><th>Estado</th><th>Tu rol</th><th></th></tr></thead>
                 <tbody>
                 <?php foreach ($properties as $p): ?>
+                    <?php
+                    $role = (string) ($p['role'] ?? 'viewer');
+                    $canManage = in_array($role, ['owner', 'admin'], true);
+                    $canEdit = in_array($role, ['owner', 'admin', 'member', 'collaborator'], true);
+                    ?>
                     <tr>
-                        <td><a href="<?= e(url('/properties/' . $p['public_id'])) ?>"><?= e($p['name']) ?></a></td>
+                        <td><a href="<?= e(url('/properties/' . $p['public_id'] . '/dashboard')) ?>"><?= e($p['name']) ?></a></td>
                         <td><?= e(property_type_label($p['type'] ?? null)) ?></td>
                         <td><?= e(property_tenure_label($p['tenure'] ?? null)) ?></td>
                         <td><?= e(ucfirst((string) ($p['status'] ?? ''))) ?></td>
                         <td><?= e(member_role_label($p['role'] ?? null)) ?></td>
-                        <td><a href="<?= e(url('/properties/' . $p['public_id'] . '/dashboard')) ?>">Panel</a></td>
+                        <td class="actions" style="white-space:nowrap">
+                            <a href="<?= e(url('/properties/' . $p['public_id'] . '/dashboard')) ?>">Panel</a>
+                            <?php if ($canEdit || $canManage): ?>
+                                · <a href="<?= e(url('/properties/' . $p['public_id'] . '/edit')) ?>">Editar</a>
+                            <?php endif; ?>
+                            <?php if ($canManage): ?>
+                                · <a class="text-danger" href="<?= e(url('/properties/' . $p['public_id'] . '/edit')) ?>#eliminar">Eliminar</a>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

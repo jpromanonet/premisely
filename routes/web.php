@@ -195,13 +195,20 @@ $router->post('/properties/{property}/services/bills/{bill}/delete', [ServiceCon
 $router->get('/properties/{property}/expenses', [ExpenseController::class, 'index'], $property);
 $router->get('/properties/{property}/expenses/create', [ExpenseController::class, 'create'], $property);
 $router->post('/properties/{property}/expenses', [ExpenseController::class, 'store'], $propertyCsrf);
+$router->get('/properties/{property}/expenses/fixed/create', [ExpenseController::class, 'createFixed'], $property);
+$router->post('/properties/{property}/expenses/fixed', [ExpenseController::class, 'storeFixed'], $propertyCsrf);
+$router->get('/properties/{property}/expenses/fixed/{fixed}/edit', [ExpenseController::class, 'editFixed'], $property);
+$router->post('/properties/{property}/expenses/fixed/{fixed}', [ExpenseController::class, 'updateFixed'], $propertyCsrf);
+$router->post('/properties/{property}/expenses/fixed/{fixed}/delete', [ExpenseController::class, 'destroyFixed'], $propertyCsrf);
+$router->get('/properties/{property}/expenses/{expense}/edit', [ExpenseController::class, 'edit'], $property);
+$router->post('/properties/{property}/expenses/{expense}', [ExpenseController::class, 'update'], $propertyCsrf);
 $router->post('/properties/{property}/expenses/{expense}/archive', [ExpenseController::class, 'archive'], $propertyCsrf);
 
 // Documents
 $router->get('/properties/{property}/documents', [DocumentController::class, 'index'], $property);
 $router->get('/properties/{property}/documents/create', [DocumentController::class, 'create'], $property);
 $router->post('/properties/{property}/documents', [DocumentController::class, 'store'], $propertyCsrf);
-$router->post('/properties/{property}/documents/{document}/archive', [DocumentController::class, 'archive'], $propertyCsrf);
+$router->post('/properties/{property}/documents/{document}/delete', [DocumentController::class, 'destroy'], $propertyCsrf);
 
 // Search
 $router->get('/properties/{property}/search', [SearchController::class, 'index'], $property);

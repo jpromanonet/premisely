@@ -39,6 +39,7 @@ final class PropertyController extends Controller
             'title' => 'Nueva propiedad',
             'heading' => 'Nueva propiedad',
             'property' => null,
+            'canManage' => true,
         ]);
     }
 
@@ -69,19 +70,24 @@ final class PropertyController extends Controller
     public function edit(Request $request, array $params): never
     {
         $property = PropertyContext::property();
+        if (!PropertyContext::canManage() && !PropertyContext::canEdit()) {
+            flash('error', 'No tenés permiso para editar esta propiedad.');
+            $this->redirect('/properties/' . $property['public_id'] . '/dashboard');
+        }
         $this->view('properties/form', [
             'title' => 'Editar propiedad',
             'heading' => 'Editar propiedad',
             'property' => $property,
+            'canManage' => PropertyContext::canManage(),
         ]);
     }
 
     public function update(Request $request, array $params): never
     {
         $property = PropertyContext::property();
-        if (!PropertyContext::canManage()) {
+        if (!PropertyContext::canManage() && !PropertyContext::canEdit()) {
             flash('error', 'No tenés permiso.');
-            $this->redirect('/properties/' . $property['public_id']);
+            $this->redirect('/properties/' . $property['public_id'] . '/dashboard');
         }
         $validator = Validator::make($request->all(), [
             'name' => 'required|max:160',

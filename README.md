@@ -11,7 +11,7 @@ Plataforma para administrar propiedades, espacios, inventario, stock, compras, t
 
 ## Desarrollo local / servidor W
 
-En este entorno el despliegue apunta a `W:\premisely` → `http://192.168.100.50/premisely`
+En este entorno el despliegue apunta a `/var/www/html/premisely` → LAN `http://192.168.18.50/premisely` o Tailscale `http://100.108.176.52/premisely`
 
 Credenciales MySQL del servidor:
 
@@ -24,7 +24,7 @@ Credenciales MySQL del servidor:
 
 1. Copiar el proyecto a `W:\premisely` (o al document root deseado).
 2. Asegurar que `.env` tenga la configuración correcta.
-3. Abrir `http://192.168.100.50/premisely/index.php?r=/install`
+3. Abrir `http://192.168.18.50/premisely/index.php?r=/install` (o la IP Tailscale `100.108.176.52`)
 4. Completar el asistente (crea DB, migraciones, seeds y usuario admin).
 5. El instalador escribe `storage/installed` y queda bloqueado.
 

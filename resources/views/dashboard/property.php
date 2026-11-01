@@ -40,7 +40,12 @@ $currentMonth = date('Y-m');
         <h1><?= e($heading) ?></h1>
         <p>El día está en el calendario. Acá solo ves cómo viene.</p>
     </div>
-    <a class="btn" href="<?= e($dayUrl) ?>">Abrir el día</a>
+    <div class="actions">
+        <a class="btn" href="<?= e($dayUrl) ?>">Abrir el día</a>
+        <?php if (\Premisely\Shared\PropertyContext::canManage() || \Premisely\Shared\PropertyContext::canEdit()): ?>
+            <a class="btn btn--ghost" href="<?= e(url('/properties/' . $pid . '/edit')) ?>">Editar propiedad</a>
+        <?php endif; ?>
+    </div>
 </div>
 
 <div class="today-grid">

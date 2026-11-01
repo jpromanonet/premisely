@@ -116,13 +116,15 @@ final class Request
 
     private static function stripBasePath(string $path): string
     {
-        $appUrl = (string) (config('app.url') ?? '');
-        if ($appUrl !== '') {
-            $base = parse_url($appUrl, PHP_URL_PATH) ?: '';
-            $base = rtrim((string) $base, '/');
-            if ($base !== '' && (str_starts_with($path, $base . '/') || $path === $base)) {
-                return substr($path, strlen($base)) ?: '/';
+        $base = function_exists('app_base_path') ? app_base_path() : '';
+        if ($base === '') {
+            $appUrl = (string) (config('app.url') ?? '');
+            if ($appUrl !== '') {
+                $base = rtrim((string) (parse_url($appUrl, PHP_URL_PATH) ?: ''), '/');
             }
+        }
+        if ($base !== '' && (str_starts_with($path, $base . '/') || $path === $base)) {
+            return substr($path, strlen($base)) ?: '/';
         }
 
         $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));

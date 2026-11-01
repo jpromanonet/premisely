@@ -23,9 +23,9 @@ $pid = $property['public_id'];
                         <div class="row-actions__group">
                             <a class="btn btn--ghost btn--sm" href="<?= e(url('/files/documents/' . $d['public_id'])) ?>">Descargar</a>
                             <?php if ($canEdit): ?>
-                                <form method="post" action="<?= e(url('/properties/' . $pid . '/documents/' . $d['public_id'] . '/archive')) ?>">
+                                <form method="post" action="<?= e(url('/properties/' . $pid . '/documents/' . $d['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este documento? No se puede deshacer.');">
                                     <?= csrf_field() ?>
-                                    <button class="btn btn--danger btn--sm" type="submit">Archivar</button>
+                                    <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
                                 </form>
                             <?php endif; ?>
                         </div>
