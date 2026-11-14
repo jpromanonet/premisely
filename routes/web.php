@@ -258,9 +258,9 @@ $router->get('/properties/{property}/calendar', [\Premisely\Modules\Calendar\Con
 $router->get('/properties/{property}/calendar/notes/create', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'createNote'], $property);
 $router->post('/properties/{property}/calendar/notes', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'storeNote'], $propertyCsrf);
 $router->get('/properties/{property}/calendar/notes/{note}/edit', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'editNote'], $property);
-$router->post('/properties/{property}/calendar/notes/{note}', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'updateNote'], $propertyCsrf);
 $router->post('/properties/{property}/calendar/notes/{note}/toggle', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'toggleNote'], $propertyCsrf);
 $router->post('/properties/{property}/calendar/notes/{note}/delete', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'destroyNote'], $propertyCsrf);
+$router->post('/properties/{property}/calendar/notes/{note}', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'updateNote'], $propertyCsrf);
 $router->get('/properties/{property}/planning', [\Premisely\Modules\Planning\Controllers\PlanningController::class, 'weekly'], $property);
 $router->get('/properties/{property}/reports', [\Premisely\Modules\Reports\Controllers\ReportController::class, 'index'], $property);
 $router->get('/properties/{property}/inventory/{item}/qr', [\Premisely\Modules\Qr\Controllers\QrController::class, 'show'], $property);

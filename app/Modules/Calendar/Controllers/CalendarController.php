@@ -130,8 +130,8 @@ final class CalendarController extends Controller
         $markCursor = $gridStart;
         while ($markCursor <= $gridEnd) {
             $key = $markCursor->format('Y-m-d');
-            // Habits only mark days that already arrived.
-            if ($key <= $today) {
+            // Habits only mark the real current day on the month grid.
+            if ($key === $today) {
                 foreach ($habitRows as $habit) {
                     $habitType = (string) ($habit['frequency_type'] ?? '');
                     $habitDay = (int) ($habit['schedule_day'] ?? 0);
@@ -141,7 +141,8 @@ final class CalendarController extends Controller
                         }
                         continue;
                     }
-                    if (substr((string) ($habit['next_due_at'] ?? ''), 0, 10) === $key) {
+                    $dueOn = substr((string) ($habit['next_due_at'] ?? ''), 0, 10);
+                    if ($dueOn === '' || $dueOn <= $key) {
                         $marks[$key] = ($marks[$key] ?? 0) + 1;
                     }
                 }
@@ -308,16 +309,18 @@ final class CalendarController extends Controller
             $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar');
         }
 
+        $today = date('Y-m-d');
+        $now = date('Y-m-d H:i:s');
         if (empty($note['completed_at'])) {
             Connection::query(
-                'UPDATE calendar_notes SET completed_at = NOW(), note_date = CURDATE() WHERE id = :id',
-                ['id' => $note['id']]
+                'UPDATE calendar_notes SET completed_at = :done_at, note_date = :day WHERE id = :id',
+                ['done_at' => $now, 'day' => $today, 'id' => $note['id']]
             );
             flash('success', 'Nota tachada.');
         } else {
             Connection::query(
-                'UPDATE calendar_notes SET completed_at = NULL, note_date = CURDATE() WHERE id = :id',
-                ['id' => $note['id']]
+                'UPDATE calendar_notes SET completed_at = NULL, note_date = :day WHERE id = :id',
+                ['day' => $today, 'id' => $note['id']]
             );
             flash('success', 'Nota reabierta.');
         }

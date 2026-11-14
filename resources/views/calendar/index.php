@@ -266,9 +266,9 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
             <?php
             $items = $habits;
             $canToggle = !empty($canEdit) && $day === $today;
-            $emptyNote = $day > $today
-                ? 'Los hábitos aparecen cuando llega ese día.'
-                : 'Nada para marcar en este día.';
+            $emptyNote = $day === $today
+                ? 'Nada para marcar en este día.'
+                : 'Los hábitos solo se ven el día de hoy.';
             require view_path('routines/_quests.php');
             ?>
         </section>
