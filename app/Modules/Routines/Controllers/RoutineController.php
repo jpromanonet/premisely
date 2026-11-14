@@ -250,7 +250,9 @@ final class RoutineController extends Controller
         }
 
         $routine = $this->findRoutine($params['routine'] ?? '');
-        $doneToday = substr((string) ($routine['last_executed_at'] ?? ''), 0, 10) === date('Y-m-d');
+        $today = date('Y-m-d');
+        $now = date('Y-m-d H:i:s');
+        $doneToday = substr((string) ($routine['last_executed_at'] ?? ''), 0, 10) === $today;
         if ($doneToday) {
             $redirect = (string) ($request->input('redirect') ?: '/properties/' . PropertyContext::property()['public_id'] . '/routines');
             $this->redirect($redirect);
@@ -268,19 +270,22 @@ final class RoutineController extends Controller
         try {
             Connection::query(
                 'INSERT INTO routine_executions (routine_id, property_id, executed_by, notes, executed_at)
-                 VALUES (:routine_id, :property_id, :executed_by, :notes, NOW())',
+                 VALUES (:routine_id, :property_id, :executed_by, :notes, :executed_at)',
                 [
                     'routine_id' => $routine['id'],
                     'property_id' => $pid,
                     'executed_by' => Auth::id(),
                     'notes' => $request->input('notes'),
+                    'executed_at' => $now,
                 ]
             );
 
             Connection::query(
-                'UPDATE routines SET last_executed_at = NOW(), next_due_at = :next, updated_at = NOW()
+                'UPDATE routines SET last_executed_at = :done_at, next_due_at = :next, updated_at = :done_at2
                  WHERE id = :id',
                 [
+                    'done_at' => $now,
+                    'done_at2' => $now,
                     'next' => $nextDue->format('Y-m-d H:i:s'),
                     'id' => $routine['id'],
                 ]
@@ -317,7 +322,9 @@ final class RoutineController extends Controller
              ORDER BY executed_at DESC, id DESC LIMIT 1',
             ['id' => $routine['id'], 'pid' => $pid]
         );
-        if ($last && substr((string) $last['executed_at'], 0, 10) === date('Y-m-d')) {
+        $today = date('Y-m-d');
+        $now = date('Y-m-d H:i:s');
+        if ($last && substr((string) $last['executed_at'], 0, 10) === $today) {
             Connection::query('DELETE FROM routine_executions WHERE id = :id', ['id' => $last['id']]);
             $prev = Connection::fetch(
                 'SELECT executed_at FROM routine_executions
@@ -326,10 +333,11 @@ final class RoutineController extends Controller
                 ['id' => $routine['id'], 'pid' => $pid]
             );
             Connection::query(
-                'UPDATE routines SET last_executed_at = :last, next_due_at = :next, updated_at = NOW() WHERE id = :id',
+                'UPDATE routines SET last_executed_at = :last, next_due_at = :next, updated_at = :upd WHERE id = :id',
                 [
                     'last' => $prev['executed_at'] ?? null,
                     'next' => self::dueAfterUndo($routine)->format('Y-m-d H:i:s'),
+                    'upd' => $now,
                     'id' => $routine['id'],
                 ]
             );
@@ -710,7 +718,8 @@ final class RoutineController extends Controller
             $listPositions[(int) $row['id']] = $listCounts[$bucket];
         }
         foreach ($rows as $row) {
-            $doneOnDay = substr((string) ($row['last_executed_at'] ?? ''), 0, 10) === $day;
+            $doneOnDay = in_array($day, $datesByRoutine[(int) $row['id']] ?? [], true)
+                || substr((string) ($row['last_executed_at'] ?? ''), 0, 10) === $day;
             $dueOn = substr((string) ($row['next_due_at'] ?? ''), 0, 10);
             $type = (string) $row['frequency_type'];
             $schedule = (int) ($row['schedule_day'] ?? 0);

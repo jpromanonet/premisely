@@ -15,7 +15,7 @@ $views = [
 ];
 $view = isset($views[$view]) ? $view : 'daily';
 $pct = $total > 0 ? (int) round($done / $total * 100) : 0;
-$back = url('/properties/' . $pid . '/routines', ['view' => $view]);
+$back = '/properties/' . $pid . '/routines?view=' . rawurlencode($view);
 $weekdays = [1 => 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
 $heading = ucfirst($weekdays[(int) date('N')]) . ' ' . date('j');
 $empty = [

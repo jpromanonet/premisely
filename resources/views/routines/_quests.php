@@ -43,7 +43,7 @@ $when = static function (array $habit) use ($frequencies): string {
         ?>
         <?php
         $habitId = (string) $habit['public_id'];
-        $habitBack = preg_replace('/#.*$/', '', (string) $back) . '#habit-' . $habitId;
+        $habitBack = preg_replace('/#.*$/', '', (string) $back) . '#habit-' . rawurlencode($habitId);
         ?>
         <article class="quest<?= $checked ? ' is-done' : '' ?><?= empty($habit['due_today']) ? ' is-later' : '' ?>" id="habit-<?= e($habitId) ?>">
             <?php if (!empty($canToggle) && !empty($habit['due_today'])): ?>

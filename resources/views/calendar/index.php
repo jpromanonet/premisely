@@ -18,7 +18,7 @@
 /** @var bool $canEdit */
 
 $pid = (string) $property['public_id'];
-$back = url('/properties/' . $pid . '/calendar', ['day' => $day, 'month' => $month]);
+$back = '/properties/' . $pid . '/calendar?day=' . rawurlencode($day) . '&month=' . rawurlencode($month);
 $months = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 $weekdays = [1 => 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
 $selected = new DateTimeImmutable($day);
