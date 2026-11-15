@@ -255,6 +255,10 @@ $router->post('/properties/{property}/laundry/{routine}/delete', [\Premisely\Mod
 
 // V1.5 — Calendar / Planning / Reports / QR / Warranties
 $router->get('/properties/{property}/calendar', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'index'], $property);
+$router->get('/properties/{property}/calendar/week-spend/create', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'createWeekSpend'], $property);
+$router->post('/properties/{property}/calendar/week-spend', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'storeWeekSpend'], $propertyCsrf);
+$router->post('/properties/{property}/calendar/week-spend/{item}/toggle', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'toggleWeekSpend'], $propertyCsrf);
+$router->post('/properties/{property}/calendar/week-spend/{item}/delete', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'destroyWeekSpend'], $propertyCsrf);
 $router->get('/properties/{property}/calendar/notes/create', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'createNote'], $property);
 $router->post('/properties/{property}/calendar/notes', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'storeNote'], $propertyCsrf);
 $router->get('/properties/{property}/calendar/notes/{note}/edit', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'editNote'], $property);

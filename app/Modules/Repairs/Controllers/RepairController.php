@@ -242,10 +242,25 @@ final class RepairController extends Controller
         }
 
         $repair = $this->findRepair($params['repair'] ?? '');
+        $pid = PropertyContext::propertyId();
+        $isDone = in_array((string) ($repair['status'] ?? ''), ['hecho', 'done'], true);
+
+        if ($isDone) {
+            Connection::query(
+                'UPDATE repair_records SET status = \'pendiente\', closed_at = NULL, updated_at = NOW() WHERE id = :id',
+                ['id' => $repair['id']]
+            );
+            ActivityLogger::log($pid, 'repair_record', (int) $repair['id'], 'reopened');
+            flash('success', 'Reparación reabierta.');
+            if ($request->input('redirect')) {
+                $this->redirect((string) $request->input('redirect'));
+            }
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . date('Y-m-d'));
+        }
+
         $cost = $request->input('cost');
         $currency = $request->input('currency') ?: ($repair['currency'] ?? PropertyContext::property()['currency'] ?? 'ARS');
         $closedAt = (string) ($request->input('closed_at') ?: date('Y-m-d'));
-        $pid = PropertyContext::propertyId();
 
         Connection::begin();
         try {

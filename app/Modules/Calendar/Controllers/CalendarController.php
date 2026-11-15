@@ -42,10 +42,11 @@ final class CalendarController extends Controller
 
         Connection::query(
             'UPDATE tasks SET due_date = NULL, updated_at = NOW()
-             WHERE property_id = :p AND kind = \'reparacion\' AND due_date IS NOT NULL AND archived_at IS NULL',
+             WHERE property_id = :p AND kind IN (\'reparacion\', \'medico\') AND due_date IS NOT NULL AND archived_at IS NULL',
             ['p' => $pid]
         );
 
+        $openKinds = '(t.kind IS NULL OR t.kind NOT IN (\'reparacion\', \'medico\'))';
         $tasks = Connection::fetchAll(
             'SELECT t.public_id, t.title, t.kind, t.status, t.priority, t.due_date, t.completed_at,
                     COALESCE(NULLIF(u.name, \'\'), m.display_name) AS assignee_name
@@ -53,7 +54,7 @@ final class CalendarController extends Controller
              LEFT JOIN property_members m ON m.id = t.assignee_member_id
              LEFT JOIN users u ON u.id = m.user_id
              WHERE t.property_id = :p AND t.archived_at IS NULL AND t.due_date = :day
-               AND (t.kind IS NULL OR t.kind <> \'reparacion\')
+               AND ' . $openKinds . '
              ORDER BY FIELD(t.status, \'pending\', \'in_progress\', \'done\', \'cancelled\'), t.title',
             ['p' => $pid, 'day' => $day]
         );
@@ -66,22 +67,75 @@ final class CalendarController extends Controller
                  LEFT JOIN users u ON u.id = m.user_id
                  WHERE t.property_id = :p AND t.archived_at IS NULL AND t.due_date IS NULL
                    AND t.status IN (\'pending\', \'in_progress\')
-                   AND (t.kind IS NULL OR t.kind <> \'reparacion\')
+                   AND ' . $openKinds . '
                  ORDER BY t.title',
                 ['p' => $pid]
             )
             : [];
         $repairTasks = Connection::fetchAll(
-            'SELECT t.public_id, t.title, t.status, t.priority,
+            'SELECT t.public_id, t.title, t.status, t.priority, t.completed_at,
                     COALESCE(NULLIF(u.name, \'\'), m.display_name) AS assignee_name
              FROM tasks t
              LEFT JOIN property_members m ON m.id = t.assignee_member_id
              LEFT JOIN users u ON u.id = m.user_id
              WHERE t.property_id = :p AND t.archived_at IS NULL AND t.kind = \'reparacion\'
-               AND t.status IN (\'pending\', \'in_progress\')
-             ORDER BY t.title',
-            ['p' => $pid]
+               AND (
+                 t.status IN (\'pending\', \'in_progress\')
+                 OR (t.status = \'done\' AND t.completed_at IS NOT NULL
+                     AND t.completed_at >= :day_start AND t.completed_at < :day_end)
+               )
+             ORDER BY FIELD(t.status, \'pending\', \'in_progress\', \'done\'), t.title',
+            [
+                'p' => $pid,
+                'day_start' => $day . ' 00:00:00',
+                'day_end' => (new DateTimeImmutable($day))->modify('+1 day')->format('Y-m-d') . ' 00:00:00',
+            ]
         );
+        $medicalTasks = Connection::fetchAll(
+            'SELECT t.public_id, t.title, t.status, t.priority, t.completed_at,
+                    COALESCE(NULLIF(u.name, \'\'), m.display_name) AS assignee_name
+             FROM tasks t
+             LEFT JOIN property_members m ON m.id = t.assignee_member_id
+             LEFT JOIN users u ON u.id = m.user_id
+             WHERE t.property_id = :p AND t.archived_at IS NULL AND t.kind = \'medico\'
+               AND (
+                 t.status IN (\'pending\', \'in_progress\')
+                 OR (t.status = \'done\' AND t.completed_at IS NOT NULL
+                     AND t.completed_at >= :day_start AND t.completed_at < :day_end)
+               )
+             ORDER BY FIELD(t.status, \'pending\', \'in_progress\', \'done\'), t.title',
+            [
+                'p' => $pid,
+                'day_start' => $day . ' 00:00:00',
+                'day_end' => (new DateTimeImmutable($day))->modify('+1 day')->format('Y-m-d') . ' 00:00:00',
+            ]
+        );
+
+        $weekStart = (new DateTimeImmutable($day))->modify('monday this week')->format('Y-m-d');
+        $dayStart = $day . ' 00:00:00';
+        $dayEnd = (new DateTimeImmutable($day))->modify('+1 day')->format('Y-m-d') . ' 00:00:00';
+        $weekSpend = Connection::fetchAll(
+            'SELECT public_id, title, amount, currency, completed_at
+             FROM week_spend_items
+             WHERE property_id = :p AND archived_at IS NULL AND week_start = :week
+               AND (
+                 completed_at IS NULL
+                 OR (completed_at >= :day_start AND completed_at < :day_end)
+               )
+             ORDER BY completed_at IS NULL DESC, id',
+            [
+                'p' => $pid,
+                'week' => $weekStart,
+                'day_start' => $dayStart,
+                'day_end' => $dayEnd,
+            ]
+        );
+        $weekSpendTotal = 0.0;
+        foreach ($weekSpend as $row) {
+            if (empty($row['completed_at'])) {
+                $weekSpendTotal += (float) $row['amount'];
+            }
+        }
 
         $habitBoard = RoutineController::forDay($pid, $day);
 
@@ -95,13 +149,28 @@ final class CalendarController extends Controller
         \Premisely\Modules\Repairs\Controllers\RepairController::archiveCopiesOfTasks($pid);
 
         $repairs = Connection::fetchAll(
-            'SELECT public_id, title, status, reported_at
+            'SELECT public_id, title, status, reported_at, closed_at
              FROM repair_records
              WHERE property_id = :p AND archived_at IS NULL
-               AND status IN (\'pendiente\', \'en_curso\', \'open\', \'in_progress\')
-               AND (reported_at = :day OR (:today = :day2 AND reported_at < :day3))
-             ORDER BY reported_at, title',
-            ['p' => $pid, 'day' => $day, 'today' => $today, 'day2' => $day, 'day3' => $day]
+               AND (
+                 (
+                   status IN (\'pendiente\', \'en_curso\', \'open\', \'in_progress\')
+                   AND (reported_at = :day OR (:today = :day2 AND reported_at < :day3))
+                 )
+                 OR (
+                   status IN (\'hecho\', \'done\')
+                   AND closed_at = :closed_day
+                 )
+               )
+             ORDER BY FIELD(status, \'pendiente\', \'en_curso\', \'open\', \'in_progress\', \'hecho\', \'done\'), reported_at, title',
+            [
+                'p' => $pid,
+                'day' => $day,
+                'today' => $today,
+                'day2' => $day,
+                'day3' => $day,
+                'closed_day' => $day,
+            ]
         );
 
         $notes = Connection::fetchAll(
@@ -188,12 +257,136 @@ final class CalendarController extends Controller
             'tasks' => $tasks,
             'undated' => $undated,
             'repairTasks' => $repairTasks,
+            'medicalTasks' => $medicalTasks,
+            'weekSpend' => $weekSpend,
+            'weekSpendTotal' => $weekSpendTotal,
+            'weekStart' => $weekStart,
             'habits' => $habitBoard['items'],
             'meals' => $meals,
             'repairs' => $repairs,
             'notes' => $notes,
+            'spaces' => Connection::fetchAll(
+                'SELECT id, name FROM spaces WHERE property_id = :pid AND archived_at IS NULL ORDER BY name',
+                ['pid' => $pid]
+            ),
+            'members' => PropertyContext::assignableMembers(),
             'canEdit' => PropertyContext::canEdit(),
         ]);
+    }
+
+    public function createWeekSpend(Request $request, array $params): never
+    {
+        $day = (string) ($request->query('day') ?: date('Y-m-d'));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
+            $day = date('Y-m-d');
+        }
+        $this->redirect(
+            '/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . rawurlencode($day) . '&open=week-spend'
+        );
+    }
+
+    public function storeWeekSpend(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar');
+        }
+        $title = trim((string) $request->input('title', ''));
+        $amount = (float) $request->input('amount', 0);
+        $day = (string) ($request->input('day') ?: date('Y-m-d'));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
+            $day = date('Y-m-d');
+        }
+        $backCalendar = '/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . rawurlencode($day) . '&open=week-spend';
+        if ($title === '') {
+            flash('error', 'Poné en qué hay que gastar.');
+            $this->redirect($backCalendar);
+        }
+        if ($amount <= 0) {
+            flash('error', 'El precio tiene que ser mayor a 0.');
+            $this->redirect($backCalendar);
+        }
+        $weekStart = (new DateTimeImmutable($day))->modify('monday this week')->format('Y-m-d');
+        Connection::query(
+            'INSERT INTO week_spend_items (public_id, property_id, title, amount, currency, week_start, created_by, created_at)
+             VALUES (:pid, :prop, :title, :amount, :currency, :week, :uid, NOW())',
+            [
+                'pid' => ulid(),
+                'prop' => PropertyContext::propertyId(),
+                'title' => $title,
+                'amount' => $amount,
+                'currency' => PropertyContext::property()['currency'] ?? 'ARS',
+                'week' => $weekStart,
+                'uid' => \Premisely\Core\Auth\Auth::id(),
+            ]
+        );
+        flash('success', 'Quedó en gastos de la semana.');
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . $day);
+    }
+
+    public function toggleWeekSpend(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar');
+        }
+        $key = (string) ($params['item'] ?? '');
+        $item = Connection::fetch(
+            'SELECT id, completed_at FROM week_spend_items
+             WHERE property_id = :pid AND (public_id = :key OR id = :id) AND archived_at IS NULL
+             LIMIT 1',
+            [
+                'pid' => PropertyContext::propertyId(),
+                'key' => $key,
+                'id' => ctype_digit($key) ? (int) $key : 0,
+            ]
+        );
+        if (!$item) {
+            flash('error', 'No se encontró.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar');
+        }
+        $now = date('Y-m-d H:i:s');
+        if (empty($item['completed_at'])) {
+            Connection::query(
+                'UPDATE week_spend_items SET completed_at = :done WHERE id = :id',
+                ['done' => $now, 'id' => $item['id']]
+            );
+        } else {
+            Connection::query(
+                'UPDATE week_spend_items SET completed_at = NULL WHERE id = :id',
+                ['id' => $item['id']]
+            );
+        }
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . date('Y-m-d'));
+    }
+
+    public function destroyWeekSpend(Request $request, array $params): never
+    {
+        if (!PropertyContext::canEdit()) {
+            flash('error', 'No tenés permisos.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar');
+        }
+        $key = (string) ($params['item'] ?? '');
+        Connection::query(
+            'UPDATE week_spend_items SET archived_at = NOW()
+             WHERE property_id = :pid AND (public_id = :key OR id = :id) AND archived_at IS NULL',
+            [
+                'pid' => PropertyContext::propertyId(),
+                'key' => $key,
+                'id' => ctype_digit($key) ? (int) $key : 0,
+            ]
+        );
+        flash('success', 'Eliminado.');
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . date('Y-m-d'));
     }
 
     public function createNote(Request $request, array $params): never
@@ -216,8 +409,13 @@ final class CalendarController extends Controller
             $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar');
         }
         $title = trim((string) $request->input('title', ''));
+        $noteDate = (string) ($request->input('note_date') ?: date('Y-m-d'));
         if ($title === '') {
             flash('error', 'El título es obligatorio.');
+            $failTo = (string) ($request->input('redirect') ?: '');
+            if ($failTo !== '') {
+                $this->redirect($failTo . (str_contains($failTo, '?') ? '&' : '?') . 'open=note');
+            }
             $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar/notes/create');
         }
         Connection::query(
@@ -227,13 +425,15 @@ final class CalendarController extends Controller
                 'pid' => ulid(),
                 'prop' => PropertyContext::propertyId(),
                 'title' => $title,
-                'date' => $request->input('note_date') ?: date('Y-m-d'),
+                'date' => $noteDate,
                 'notes' => $request->input('notes'),
                 'uid' => \Premisely\Core\Auth\Auth::id(),
             ]
         );
         flash('success', 'Nota de calendario creada.');
-        $noteDate = (string) ($request->input('note_date') ?: date('Y-m-d'));
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . $noteDate);
     }
 

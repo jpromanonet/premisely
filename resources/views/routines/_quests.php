@@ -109,15 +109,12 @@ $when = static function (array $habit) use ($frequencies): string {
                             <?php endforeach; ?>
                         </select>
                     </form>
+                    <a class="quest-edit" href="<?= e(url('/properties/' . $pid . '/routines/' . $habitId . '/edit')) ?>">Editar</a>
                     <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $habitId . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este hábito?');">
                         <?= csrf_field() ?>
                         <input type="hidden" name="redirect" value="<?= e($habitBack) ?>">
-                        <button class="btn btn--danger btn--sm" type="submit">Eliminar</button>
+                        <button class="quest-delete" type="submit" aria-label="Eliminar" title="Eliminar">×</button>
                     </form>
-                </div>
-            <?php elseif (!empty($canEdit)): ?>
-                <div class="quest-tools">
-                    <a class="quest-edit" href="<?= e(url('/properties/' . $pid . '/routines/' . $habitId . '/edit')) ?>">Editar</a>
                 </div>
             <?php endif; ?>
         </article>

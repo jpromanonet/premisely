@@ -11,11 +11,22 @@
 /** @var list<array<string,mixed>> $tasks */
 /** @var list<array<string,mixed>> $undated */
 /** @var list<array<string,mixed>> $repairTasks */
+/** @var list<array<string,mixed>> $medicalTasks */
+/** @var list<array<string,mixed>> $weekSpend */
+/** @var float $weekSpendTotal */
 /** @var list<array<string,mixed>> $habits */
 /** @var list<array<string,mixed>> $meals */
 /** @var list<array<string,mixed>> $repairs */
 /** @var list<array<string,mixed>> $notes */
+/** @var list<array<string,mixed>> $spaces */
+/** @var list<array<string,mixed>> $members */
 /** @var bool $canEdit */
+$medicalTasks = $medicalTasks ?? [];
+$weekSpend = $weekSpend ?? [];
+$weekSpendTotal = (float) ($weekSpendTotal ?? 0);
+$spaces = $spaces ?? [];
+$members = $members ?? [];
+$priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent' => 'Urgente'];
 
 $pid = (string) $property['public_id'];
 $back = '/properties/' . $pid . '/calendar?day=' . rawurlencode($day) . '&month=' . rawurlencode($month);
@@ -82,10 +93,11 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
         <?php endforeach; ?>
         <?php if (!empty($canEdit)): ?>
             <div class="month-card__adds">
-                <a class="btn btn--block btn--task" href="<?= e(url('/properties/' . $pid . '/tasks/create', ['kind' => 'tarea'])) ?>">+ Tarea</a>
-                <a class="btn btn--block btn--repair" href="<?= e(url('/properties/' . $pid . '/tasks/create', ['kind' => 'reparacion'])) ?>">+ Reparación</a>
-                <a class="btn btn--block btn--habit" href="<?= e(url('/properties/' . $pid . '/routines/create')) ?>">+ Hábito</a>
-                <a class="btn btn--block btn--note" href="<?= e(url('/properties/' . $pid . '/calendar/notes/create')) ?>">+ Nota</a>
+                <button type="button" class="btn btn--block btn--task" data-modal-open="task-modal" aria-haspopup="dialog">+ Tarea</button>
+                <button type="button" class="btn btn--block btn--repair" data-modal-open="repair-modal" aria-haspopup="dialog">+ Reparación</button>
+                <button type="button" class="btn btn--block btn--medical" data-modal-open="medical-modal" aria-haspopup="dialog">+ Médico</button>
+                <button type="button" class="btn btn--block btn--spend" data-modal-open="week-spend-modal" aria-haspopup="dialog">+ Gasto semana</button>
+                <button type="button" class="btn btn--block btn--note" data-modal-open="note-modal" aria-haspopup="dialog">+ Nota</button>
             </div>
         <?php endif; ?>
     </aside>
@@ -136,40 +148,45 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
 
         <section class="day-cut task-cut">
         <div class="section-head">
-            <h2 class="section-label">Tareas del día</h2>
+            <h2 class="section-label">Tareas pendientes</h2>
         </div>
-        <div class="stack-cards">
+        <div class="stack-cards quest-list">
             <?php if ($tasks === [] && ($day !== $today || $undated === [])): ?>
                 <p class="empty-note">Nada pendiente este día.</p>
             <?php endif; ?>
             <?php foreach ($tasks as $task): ?>
-                <?php $done = ($task['status'] ?? '') === 'done'; ?>
-                <article class="item-card<?= $done ? ' is-done' : '' ?>">
-                    <div>
+                <?php
+                $done = ($task['status'] ?? '') === 'done';
+                $taskId = (string) $task['public_id'];
+                $taskMeta = ['Tarea'];
+                if (!empty($task['assignee_name'])) {
+                    $taskMeta[] = (string) $task['assignee_name'];
+                }
+                if (!empty($task['priority']) && $task['priority'] !== 'normal') {
+                    $taskMeta[] = $priorities[$task['priority']] ?? (string) $task['priority'];
+                }
+                ?>
+                <article class="quest<?= $done ? ' is-done' : '' ?>" id="task-<?= e($taskId) ?>">
+                    <?php if (!empty($canEdit)): ?>
+                        <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $taskId . '/status')) ?>">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="status" value="<?= $done ? 'pending' : 'done' ?>">
+                            <input type="hidden" name="redirect" value="<?= e($back . '#task-' . $taskId) ?>">
+                            <button class="quest-check<?= $done ? ' is-on' : '' ?>" type="submit" aria-label="<?= $done ? 'Desmarcar' : 'Hecho' ?>"><?= $done ? '✓' : '' ?></button>
+                        </form>
+                    <?php else: ?>
+                        <span class="quest-check<?= $done ? ' is-on' : '' ?>"><?= $done ? '✓' : '' ?></span>
+                    <?php endif; ?>
+                    <div class="quest__body">
                         <strong><?= e((string) $task['title']) ?></strong>
-                        <p class="muted">
-                            Tarea
-                            <?php if (!empty($task['assignee_name'])): ?> · <?= e((string) $task['assignee_name']) ?><?php endif; ?>
-                            <?php if (!empty($task['priority']) && $task['priority'] !== 'normal'): ?> · <?= e($priorities[$task['priority']] ?? (string) $task['priority']) ?><?php endif; ?>
-                            <?php if ($done): ?>
-                                · Hecha<?php $when = format_when($task['completed_at'] ?? ''); if ($when !== ''): ?> el <?= e($when) ?><?php endif; ?>
-                            <?php endif; ?>
-                        </p>
+                        <p><?= e(implode(' · ', $taskMeta)) ?></p>
                     </div>
                     <?php if (!empty($canEdit)): ?>
-                        <div class="actions" style="margin-top:0">
-                            <?php if (!$done): ?>
-                                <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $task['public_id'] . '/status')) ?>">
-                                    <?= csrf_field() ?>
-                                    <input type="hidden" name="status" value="done">
-                                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                                    <button class="btn btn--sm" type="submit">Hecho</button>
-                                </form>
-                            <?php endif; ?>
-                            <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $task['public_id'] . '/archive')) ?>" onsubmit="return confirm('¿Eliminar esta tarea?');">
+                        <div class="quest-tools">
+                            <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $taskId . '/archive')) ?>" onsubmit="return confirm('¿Eliminar esta tarea?');">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                                <button class="btn btn--ghost btn--sm" type="submit">Eliminar</button>
+                                <button class="quest-delete" type="submit" aria-label="Eliminar" title="Eliminar">×</button>
                             </form>
                         </div>
                     <?php endif; ?>
@@ -177,23 +194,28 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
             <?php endforeach; ?>
             <?php if ($day === $today): ?>
                 <?php foreach ($undated as $task): ?>
-                    <article class="item-card">
-                        <div>
+                    <?php $taskId = (string) $task['public_id']; ?>
+                    <article class="quest" id="task-<?= e($taskId) ?>">
+                        <?php if (!empty($canEdit)): ?>
+                            <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $taskId . '/status')) ?>">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="status" value="done">
+                                <input type="hidden" name="redirect" value="<?= e($back . '#task-' . $taskId) ?>">
+                                <button class="quest-check" type="submit" aria-label="Hecho"></button>
+                            </form>
+                        <?php else: ?>
+                            <span class="quest-check"></span>
+                        <?php endif; ?>
+                        <div class="quest__body">
                             <strong><?= e((string) $task['title']) ?></strong>
-                            <p class="muted">Sin fecha<?php if (!empty($task['assignee_name'])): ?> · <?= e((string) $task['assignee_name']) ?><?php endif; ?></p>
+                            <p>Sin fecha<?php if (!empty($task['assignee_name'])): ?> · <?= e((string) $task['assignee_name']) ?><?php endif; ?></p>
                         </div>
                         <?php if (!empty($canEdit)): ?>
-                            <div class="actions" style="margin-top:0">
-                                <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $task['public_id'] . '/status')) ?>">
-                                    <?= csrf_field() ?>
-                                    <input type="hidden" name="status" value="done">
-                                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                                    <button class="btn btn--sm" type="submit">Hecho</button>
-                                </form>
-                                <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $task['public_id'] . '/archive')) ?>" onsubmit="return confirm('¿Eliminar esta tarea?');">
+                            <div class="quest-tools">
+                                <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $taskId . '/archive')) ?>" onsubmit="return confirm('¿Eliminar esta tarea?');">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                                    <button class="btn btn--ghost btn--sm" type="submit">Eliminar</button>
+                                    <button class="quest-delete" type="submit" aria-label="Eliminar" title="Eliminar">×</button>
                                 </form>
                             </div>
                         <?php endif; ?>
@@ -207,50 +229,147 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
             <div class="section-head">
                 <h2 class="section-label">Reparaciones</h2>
             </div>
-            <div class="stack-cards">
+            <div class="stack-cards quest-list">
                 <?php if ($repairTasks === [] && $repairs === []): ?>
                     <p class="empty-note">Nada para arreglar.</p>
                 <?php endif; ?>
                 <?php foreach ($repairTasks as $task): ?>
-                    <article class="item-card item-card--repair">
-                        <div>
+                    <?php
+                    $taskId = (string) $task['public_id'];
+                    $done = ($task['status'] ?? '') === 'done';
+                    ?>
+                    <article class="quest item-card--repair<?= $done ? ' is-done' : '' ?>" id="repair-<?= e($taskId) ?>">
+                        <?php if (!empty($canEdit)): ?>
+                            <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $taskId . '/status')) ?>">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="status" value="<?= $done ? 'pending' : 'done' ?>">
+                                <input type="hidden" name="redirect" value="<?= e($back . '#repair-' . $taskId) ?>">
+                                <button class="quest-check<?= $done ? ' is-on' : '' ?>" type="submit" aria-label="<?= $done ? 'Desmarcar' : 'Hecho' ?>"><?= $done ? '✓' : '' ?></button>
+                            </form>
+                        <?php else: ?>
+                            <span class="quest-check<?= $done ? ' is-on' : '' ?>"><?= $done ? '✓' : '' ?></span>
+                        <?php endif; ?>
+                        <div class="quest__body">
                             <strong><?= e((string) $task['title']) ?></strong>
-                            <p class="muted">Reparación<?php if (!empty($task['assignee_name'])): ?> · <?= e((string) $task['assignee_name']) ?><?php endif; ?></p>
+                            <p>Reparación<?php if (!empty($task['assignee_name'])): ?> · <?= e((string) $task['assignee_name']) ?><?php endif; ?></p>
                         </div>
                         <?php if (!empty($canEdit)): ?>
-                            <div class="actions" style="margin-top:0">
-                                <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $task['public_id'] . '/status')) ?>">
-                                    <?= csrf_field() ?>
-                                    <input type="hidden" name="status" value="done">
-                                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                                    <button class="btn btn--sm" type="submit">Hecho</button>
-                                </form>
-                                <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $task['public_id'] . '/archive')) ?>" onsubmit="return confirm('¿Eliminar esta tarea?');">
+                            <div class="quest-tools">
+                                <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $taskId . '/archive')) ?>" onsubmit="return confirm('¿Eliminar esta reparación?');">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                                    <button class="btn btn--ghost btn--sm" type="submit">Eliminar</button>
+                                    <button class="quest-delete" type="submit" aria-label="Eliminar" title="Eliminar">×</button>
                                 </form>
                             </div>
                         <?php endif; ?>
                     </article>
                 <?php endforeach; ?>
                 <?php foreach ($repairs as $repair): ?>
-                    <article class="item-card item-card--repair">
-                        <div>
+                    <?php
+                    $repairId = (string) $repair['public_id'];
+                    $done = in_array((string) ($repair['status'] ?? ''), ['hecho', 'done'], true);
+                    ?>
+                    <article class="quest item-card--repair<?= $done ? ' is-done' : '' ?>" id="repair-<?= e($repairId) ?>">
+                        <?php if (!empty($canEdit)): ?>
+                            <form method="post" action="<?= e(url('/properties/' . $pid . '/repairs/' . $repairId . '/close')) ?>">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="redirect" value="<?= e($back . '#repair-' . $repairId) ?>">
+                                <button class="quest-check<?= $done ? ' is-on' : '' ?>" type="submit" aria-label="<?= $done ? 'Desmarcar' : 'Hecho' ?>"><?= $done ? '✓' : '' ?></button>
+                            </form>
+                        <?php else: ?>
+                            <span class="quest-check<?= $done ? ' is-on' : '' ?>"><?= $done ? '✓' : '' ?></span>
+                        <?php endif; ?>
+                        <div class="quest__body">
                             <strong><?= e((string) $repair['title']) ?></strong>
-                            <p class="muted">Reparación</p>
+                            <p>Reparación</p>
                         </div>
                         <?php if (!empty($canEdit)): ?>
-                            <div class="actions" style="margin-top:0">
-                                <form method="post" action="<?= e(url('/properties/' . $pid . '/repairs/' . $repair['public_id'] . '/close')) ?>">
+                            <div class="quest-tools">
+                                <form method="post" action="<?= e(url('/properties/' . $pid . '/repairs/' . $repairId . '/delete')) ?>" onsubmit="return confirm('¿Eliminar esta reparación?');">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                                    <button class="btn btn--sm" type="submit">Hecho</button>
+                                    <button class="quest-delete" type="submit" aria-label="Eliminar" title="Eliminar">×</button>
                                 </form>
-                                <form method="post" action="<?= e(url('/properties/' . $pid . '/repairs/' . $repair['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar esta tarea?');">
+                            </div>
+                        <?php endif; ?>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        </section>
+
+        <section class="day-cut medical-cut">
+            <div class="section-head">
+                <h2 class="section-label">Temas médicos</h2>
+            </div>
+            <div class="stack-cards quest-list">
+                <?php if ($medicalTasks === []): ?>
+                    <p class="empty-note">Nada médico pendiente.</p>
+                <?php endif; ?>
+                <?php foreach ($medicalTasks as $task): ?>
+                    <?php
+                    $taskId = (string) $task['public_id'];
+                    $done = ($task['status'] ?? '') === 'done';
+                    ?>
+                    <article class="quest item-card--medical<?= $done ? ' is-done' : '' ?>" id="medical-<?= e($taskId) ?>">
+                        <?php if (!empty($canEdit)): ?>
+                            <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $taskId . '/status')) ?>">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="status" value="<?= $done ? 'pending' : 'done' ?>">
+                                <input type="hidden" name="redirect" value="<?= e($back . '#medical-' . $taskId) ?>">
+                                <button class="quest-check<?= $done ? ' is-on' : '' ?>" type="submit" aria-label="<?= $done ? 'Desmarcar' : 'Hecho' ?>"><?= $done ? '✓' : '' ?></button>
+                            </form>
+                        <?php else: ?>
+                            <span class="quest-check<?= $done ? ' is-on' : '' ?>"><?= $done ? '✓' : '' ?></span>
+                        <?php endif; ?>
+                        <div class="quest__body">
+                            <strong><?= e((string) $task['title']) ?></strong>
+                            <p>Médico<?php if (!empty($task['assignee_name'])): ?> · <?= e((string) $task['assignee_name']) ?><?php endif; ?></p>
+                        </div>
+                        <?php if (!empty($canEdit)): ?>
+                            <div class="quest-tools">
+                                <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks/' . $taskId . '/archive')) ?>" onsubmit="return confirm('¿Eliminar este tema?');">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                                    <button class="btn btn--ghost btn--sm" type="submit">Eliminar</button>
+                                    <button class="quest-delete" type="submit" aria-label="Eliminar" title="Eliminar">×</button>
+                                </form>
+                            </div>
+                        <?php endif; ?>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        </section>
+
+        <section class="day-cut spend-cut">
+            <div class="section-head">
+                <h2 class="section-label">Gastos de la semana</h2>
+                <strong class="spend-total"><?= e(format_money($weekSpendTotal)) ?></strong>
+            </div>
+            <div class="stack-cards quest-list">
+                <?php if ($weekSpend === []): ?>
+                    <p class="empty-note">Nada planificado para gastar esta semana.</p>
+                <?php endif; ?>
+                <?php foreach ($weekSpend as $item): ?>
+                    <?php $spendDone = !empty($item['completed_at']); $spendId = (string) $item['public_id']; ?>
+                    <article class="quest item-card--spend<?= $spendDone ? ' is-done' : '' ?>" id="spend-<?= e($spendId) ?>">
+                        <?php if (!empty($canEdit)): ?>
+                            <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/week-spend/' . $spendId . '/toggle')) ?>">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="redirect" value="<?= e($back . '#spend-' . $spendId) ?>">
+                                <button class="quest-check<?= $spendDone ? ' is-on' : '' ?>" type="submit" aria-label="<?= $spendDone ? 'Desmarcar' : 'Hecho' ?>"><?= $spendDone ? '✓' : '' ?></button>
+                            </form>
+                        <?php else: ?>
+                            <span class="quest-check<?= $spendDone ? ' is-on' : '' ?>"><?= $spendDone ? '✓' : '' ?></span>
+                        <?php endif; ?>
+                        <div class="quest__body">
+                            <strong><?= e((string) $item['title']) ?></strong>
+                            <p><?= e(format_money($item['amount'])) ?> <?= e((string) ($item['currency'] ?? 'ARS')) ?></p>
+                        </div>
+                        <?php if (!empty($canEdit)): ?>
+                            <div class="quest-tools">
+                                <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/week-spend/' . $spendId . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este gasto?');">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
+                                    <button class="quest-delete" type="submit" aria-label="Eliminar" title="Eliminar">×</button>
                                 </form>
                             </div>
                         <?php endif; ?>
@@ -277,30 +396,30 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
             <div class="section-head">
                 <h2 class="section-label">Notas</h2>
             </div>
-            <div class="stack-cards">
+            <div class="stack-cards quest-list">
                 <?php if ($notes === []): ?><p class="empty-note">Sin notas.</p><?php endif; ?>
                 <?php foreach ($notes as $note): ?>
-                    <?php $noteDone = !empty($note['completed_at']); ?>
-                    <article class="item-card<?= $noteDone ? ' is-done' : '' ?>">
-                        <div>
+                    <?php $noteDone = !empty($note['completed_at']); $noteId = (string) $note['public_id']; ?>
+                    <article class="quest<?= $noteDone ? ' is-done' : '' ?>" id="note-<?= e($noteId) ?>">
+                        <?php if (!empty($canEdit)): ?>
+                            <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/notes/' . $noteId . '/toggle')) ?>">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="redirect" value="<?= e($back . '#note-' . $noteId) ?>">
+                                <button class="quest-check<?= $noteDone ? ' is-on' : '' ?>" type="submit" aria-label="<?= $noteDone ? 'Desmarcar' : 'Hecho' ?>"><?= $noteDone ? '✓' : '' ?></button>
+                            </form>
+                        <?php else: ?>
+                            <span class="quest-check<?= $noteDone ? ' is-on' : '' ?>"><?= $noteDone ? '✓' : '' ?></span>
+                        <?php endif; ?>
+                        <div class="quest__body">
                             <strong><?= e((string) $note['title']) ?></strong>
-                            <?php if (!empty($note['notes'])): ?><p class="muted"><?= e((string) $note['notes']) ?></p><?php endif; ?>
-                            <?php if ($noteDone): ?>
-                                <?php $when = format_when($note['completed_at'] ?? ''); ?>
-                                <p class="muted">Tachada<?php if ($when !== ''): ?> el <?= e($when) ?><?php endif; ?></p>
-                            <?php endif; ?>
+                            <?php if (!empty($note['notes'])): ?><p><?= e((string) $note['notes']) ?></p><?php endif; ?>
                         </div>
                         <?php if (!empty($canEdit)): ?>
-                            <div class="actions" style="margin-top:0">
-                                <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/notes/' . $note['public_id'] . '/toggle')) ?>">
+                            <div class="quest-tools">
+                                <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/notes/' . $noteId . '/delete')) ?>" onsubmit="return confirm('¿Eliminar esta nota?');">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                                    <button class="btn btn--sm" type="submit"><?= $noteDone ? 'Reabrir' : 'Hecho' ?></button>
-                                </form>
-                                <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/notes/' . $note['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar esta nota?');">
-                                    <?= csrf_field() ?>
-                                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                                    <button class="btn btn--ghost btn--sm" type="submit">Quitar</button>
+                                    <button class="quest-delete" type="submit" aria-label="Eliminar" title="Eliminar">×</button>
                                 </form>
                             </div>
                         <?php endif; ?>
@@ -310,3 +429,100 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
         </section>
     </div>
 </div>
+
+<?php if (!empty($canEdit)): ?>
+<?php
+$taskModals = [
+    ['id' => 'task-modal', 'kind' => 'tarea', 'heading' => 'Nueva tarea'],
+    ['id' => 'repair-modal', 'kind' => 'reparacion', 'heading' => 'Nueva reparación'],
+    ['id' => 'medical-modal', 'kind' => 'medico', 'heading' => 'Nuevo tema médico'],
+];
+foreach ($taskModals as $tm):
+?>
+<div class="modal" id="<?= e($tm['id']) ?>" hidden>
+    <button type="button" class="modal__backdrop" data-modal-close aria-label="Cerrar"></button>
+    <div class="modal__panel modal__panel--wide" role="dialog" aria-modal="true" aria-labelledby="<?= e($tm['id']) ?>-title">
+        <div class="modal__head">
+            <h2 id="<?= e($tm['id']) ?>-title"><?= e($tm['heading']) ?></h2>
+            <button type="button" class="modal__close" data-modal-close aria-label="Cerrar">×</button>
+        </div>
+        <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks')) ?>" class="stack">
+            <?= csrf_field() ?>
+            <input type="hidden" name="kind" value="<?= e($tm['kind']) ?>">
+            <input type="hidden" name="redirect" value="<?= e($back) ?>">
+            <div class="form-grid">
+                <label>Título <input name="title" required></label>
+                <label>Prioridad
+                    <select name="priority">
+                        <?php foreach ($priorities as $value => $label): ?>
+                            <option value="<?= e($value) ?>" <?= $value === 'normal' ? 'selected' : '' ?>><?= e($label) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label>Espacio
+                    <select name="space_id"><option value="">—</option>
+                        <?php foreach ($spaces as $s): ?><option value="<?= (int) $s['id'] ?>"><?= e((string) $s['name']) ?></option><?php endforeach; ?>
+                    </select>
+                </label>
+                <label>Asignado
+                    <select name="assignee_member_id"><option value="">—</option>
+                        <?php foreach ($members as $m): ?><option value="<?= (int) $m['id'] ?>"><?= e((string) $m['display_name']) ?></option><?php endforeach; ?>
+                    </select>
+                </label>
+            </div>
+            <label>Descripción <textarea name="description" rows="3"></textarea></label>
+            <div class="actions">
+                <button class="btn" type="submit">Crear</button>
+                <button class="btn btn--ghost" type="button" data-modal-close>Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+<?php endforeach; ?>
+
+<div class="modal" id="week-spend-modal" hidden>
+    <button type="button" class="modal__backdrop" data-modal-close aria-label="Cerrar"></button>
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="week-spend-title">
+        <div class="modal__head">
+            <h2 id="week-spend-title">Gasto de la semana</h2>
+            <button type="button" class="modal__close" data-modal-close aria-label="Cerrar">×</button>
+        </div>
+        <p class="muted">Algo en lo que hay que gastar esta semana.</p>
+        <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/week-spend')) ?>" class="stack">
+            <?= csrf_field() ?>
+            <input type="hidden" name="day" value="<?= e($day) ?>">
+            <input type="hidden" name="redirect" value="<?= e($back) ?>">
+            <div class="form-grid">
+                <label>En qué hay que gastar <input name="title" required placeholder="Ej. supermercado, nafta"></label>
+                <label>Precio <input type="number" name="amount" min="0.01" step="0.01" required></label>
+            </div>
+            <div class="actions">
+                <button class="btn" type="submit">Agregar</button>
+                <button class="btn btn--ghost" type="button" data-modal-close>Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="note-modal" hidden>
+    <button type="button" class="modal__backdrop" data-modal-close aria-label="Cerrar"></button>
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="note-modal-title">
+        <div class="modal__head">
+            <h2 id="note-modal-title">Nueva nota</h2>
+            <button type="button" class="modal__close" data-modal-close aria-label="Cerrar">×</button>
+        </div>
+        <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/notes')) ?>" class="stack">
+            <?= csrf_field() ?>
+            <input type="hidden" name="redirect" value="<?= e($back) ?>">
+            <div class="form-grid">
+                <label>Título <input name="title" required></label>
+                <label>Fecha <input type="date" name="note_date" value="<?= e($day) ?>"></label>
+            </div>
+            <div class="actions">
+                <button class="btn" type="submit">Agregar nota</button>
+                <button class="btn btn--ghost" type="button" data-modal-close>Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+<?php endif; ?>

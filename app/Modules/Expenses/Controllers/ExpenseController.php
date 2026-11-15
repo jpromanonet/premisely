@@ -26,15 +26,6 @@ final class ExpenseController extends Controller
     public function index(Request $request, array $params): never
     {
         $pid = PropertyContext::propertyId();
-        $expenses = Connection::fetchAll(
-            'SELECT e.*, c.name AS category_name, c.slug AS category_slug
-             FROM expenses e
-             LEFT JOIN expense_categories c ON c.id = e.category_id
-             WHERE e.property_id = :pid AND e.archived_at IS NULL
-             ORDER BY e.spent_at DESC, e.id DESC
-             LIMIT 200',
-            ['pid' => $pid]
-        );
         $fixed = Connection::fetchAll(
             'SELECT r.*, c.name AS category_name, c.slug AS category_slug
              FROM recurring_expenses r
@@ -45,9 +36,8 @@ final class ExpenseController extends Controller
         );
 
         $this->view('expenses/index', [
-            'title' => 'Gastos',
+            'title' => 'Gastos fijos',
             'property' => PropertyContext::property(),
-            'expenses' => $expenses,
             'fixedExpenses' => $fixed,
             'frequencies' => self::FREQUENCIES,
             'canEdit' => PropertyContext::canEdit(),

@@ -65,9 +65,53 @@ document.addEventListener('DOMContentLoaded', () => {
   sidebar?.querySelectorAll('a[href]').forEach((link) => {
     link.addEventListener('click', () => setNavOpen(false));
   });
+  const openModal = (modal) => {
+    if (!modal) return;
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+    const focus = modal.querySelector('.modal__panel input, .modal__panel select, .modal__panel textarea');
+    focus?.focus();
+  };
+  const closeModal = (modal) => {
+    if (!modal) return;
+    modal.hidden = true;
+    if (!document.querySelector('.modal:not([hidden])')) {
+      document.body.classList.remove('modal-open');
+    }
+  };
+  document.querySelectorAll('[data-modal-open]').forEach((el) => {
+    el.addEventListener('click', (event) => {
+      event.preventDefault();
+      openModal(document.getElementById(el.getAttribute('data-modal-open') || ''));
+    });
+  });
+  document.querySelectorAll('[data-modal-close]').forEach((el) => {
+    el.addEventListener('click', () => {
+      closeModal(el.closest('.modal'));
+    });
+  });
+  const params = new URLSearchParams(location.search);
+  const openKey = params.get('open') || '';
+  const openMap = {
+    task: 'task-modal',
+    repair: 'repair-modal',
+    medical: 'medical-modal',
+    'week-spend': 'week-spend-modal',
+    note: 'note-modal',
+  };
+  if (openMap[openKey]) {
+    openModal(document.getElementById(openMap[openKey]));
+  } else if (location.hash.startsWith('#') && document.getElementById(location.hash.slice(1))) {
+    const hashModal = document.getElementById(location.hash.slice(1));
+    if (hashModal?.classList.contains('modal')) {
+      openModal(hashModal);
+    }
+  }
+
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       setNavOpen(false);
+      document.querySelectorAll('.modal:not([hidden])').forEach((modal) => closeModal(modal));
     }
   });
 

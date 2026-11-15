@@ -85,11 +85,11 @@ $fixedCategory = $fixedCategory ?? null;
         <div class="actions">
             <button class="btn" type="submit">Guardar</button>
             <a class="btn btn--ghost" href="<?= e(url($listPath)) ?>">Cancelar</a>
+            <button class="btn btn--danger" type="submit" form="habit-delete-form">Eliminar hábito</button>
         </div>
     </form>
-    <form method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $routine['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este hábito?');">
+    <form id="habit-delete-form" method="post" action="<?= e(url('/properties/' . $pid . '/routines/' . $routine['public_id'] . '/delete')) ?>" onsubmit="return confirm('¿Eliminar este hábito?');" hidden>
         <?= csrf_field() ?>
         <input type="hidden" name="redirect" value="<?= e(url($listPath)) ?>">
-        <button class="btn btn--danger" type="submit">Eliminar hábito</button>
     </form>
 </section>

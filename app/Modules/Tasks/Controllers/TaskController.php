@@ -36,7 +36,7 @@ final class TaskController extends Controller
             ),
             'members' => PropertyContext::assignableMembers(),
             'due' => (string) $request->query('due', date('Y-m-d')),
-            'kind' => (string) $request->query('kind', 'tarea') === 'reparacion' ? 'reparacion' : 'tarea',
+            'kind' => self::normalizeKind((string) $request->query('kind', 'tarea')),
             'canEdit' => true,
         ]);
     }
@@ -76,16 +76,23 @@ final class TaskController extends Controller
                 'title' => (string) $request->input('title'),
                 'description' => $request->input('description'),
                 'priority' => (string) ($request->input('priority') ?: 'normal'),
-                'kind' => (string) $request->input('kind') === 'reparacion' ? 'reparacion' : 'tarea',
+                'kind' => self::normalizeKind((string) $request->input('kind')),
                 'status' => 'pending',
-                'due_date' => (string) $request->input('kind') === 'reparacion' ? null : date('Y-m-d'),
+                'due_date' => in_array(self::normalizeKind((string) $request->input('kind')), ['reparacion', 'medico'], true)
+                    ? null
+                    : date('Y-m-d'),
                 'tags' => $request->input('tags'),
                 'created_by' => Auth::id(),
             ]
         );
 
         ActivityLogger::log($pid, 'task', (int) Connection::lastInsertId(), 'created');
-        flash('success', (string) $request->input('kind') === 'reparacion' ? 'Trabajo cargado.' : 'Tarea creada.');
+        $kind = self::normalizeKind((string) $request->input('kind'));
+        flash('success', match ($kind) {
+            'reparacion' => 'Trabajo cargado.',
+            'medico' => 'Tema médico cargado.',
+            default => 'Tarea creada.',
+        });
         if ($request->input('redirect')) {
             $this->redirect((string) $request->input('redirect'));
         }
@@ -132,10 +139,12 @@ final class TaskController extends Controller
         }
 
         $status = (string) ($request->input('status') ?: $task['status']);
-        $isRepair = (string) $request->input('kind') === 'reparacion';
+        $kind = self::normalizeKind((string) ($request->input('kind') ?: $task['kind'] ?? 'tarea'));
         $existingDue = (string) ($task['due_date'] ?? '');
         $today = date('Y-m-d');
-        $due = $isRepair ? null : (($existingDue !== '' && $existingDue >= $today) ? $existingDue : $today);
+        $due = in_array($kind, ['reparacion', 'medico'], true)
+            ? null
+            : (($existingDue !== '' && $existingDue >= $today) ? $existingDue : $today);
         Connection::query(
             'UPDATE tasks SET
                 title = :title,
@@ -154,7 +163,7 @@ final class TaskController extends Controller
                 'title' => (string) $request->input('title'),
                 'description' => $request->input('description'),
                 'priority' => (string) ($request->input('priority') ?: 'normal'),
-                'kind' => $isRepair ? 'reparacion' : 'tarea',
+                'kind' => $kind,
                 'status' => $status,
                 'status2' => $status,
                 'due_date' => $due,
@@ -195,19 +204,22 @@ final class TaskController extends Controller
             $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks');
         }
 
+        $now = date('Y-m-d H:i:s');
+        $today = date('Y-m-d');
+        $kind = self::normalizeKind((string) ($task['kind'] ?? 'tarea'));
+        $setDue = $status === 'done' && !in_array($kind, ['reparacion', 'medico'], true);
         Connection::query(
             'UPDATE tasks SET status = :status,
-             completed_at = CASE WHEN :status2 = \'done\' THEN NOW() ELSE NULL END,
-             due_date = CASE
-               WHEN :status3 = \'done\' AND (kind IS NULL OR kind <> \'reparacion\') THEN CURDATE()
-               ELSE due_date
-             END,
-             updated_at = NOW()
+             completed_at = :completed_at,
+             due_date = CASE WHEN :set_due = 1 THEN :due_date ELSE due_date END,
+             updated_at = :updated_at
              WHERE id = :id',
             [
                 'status' => $status,
-                'status2' => $status,
-                'status3' => $status,
+                'completed_at' => $status === 'done' ? $now : null,
+                'set_due' => $setDue ? 1 : 0,
+                'due_date' => $today,
+                'updated_at' => $now,
                 'id' => $task['id'],
             ]
         );
@@ -245,6 +257,15 @@ final class TaskController extends Controller
             $this->redirect((string) $request->input('redirect'));
         }
         $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/tasks');
+    }
+
+    private static function normalizeKind(string $kind): string
+    {
+        return match ($kind) {
+            'reparacion' => 'reparacion',
+            'medico' => 'medico',
+            default => 'tarea',
+        };
     }
 
     /** @return array<string, mixed> */

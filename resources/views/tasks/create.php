@@ -6,12 +6,18 @@
 /** @var string $kind */
 $pid = $property['public_id'];
 $back = url('/properties/' . $pid . '/calendar', ['day' => $due ?: date('Y-m-d')]);
-$kinds = ['tarea' => 'Tarea', 'reparacion' => 'Reparación'];
+$kinds = ['tarea' => 'Tarea', 'reparacion' => 'Reparación', 'medico' => 'Tema médico'];
 $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent' => 'Urgente'];
+$kind = (string) ($kind ?? 'tarea');
+$heading = match ($kind) {
+    'reparacion' => 'Nueva reparación',
+    'medico' => 'Nuevo tema médico',
+    default => 'Nueva tarea',
+};
 ?>
 <div class="page-header">
     <div>
-        <h1><?= ($kind ?? 'tarea') === 'reparacion' ? 'Nueva reparación' : 'Nueva tarea' ?></h1>
+        <h1><?= e($heading) ?></h1>
     </div>
     <a class="btn btn--ghost" href="<?= e($back) ?>">← Volver al día</a>
 </div>

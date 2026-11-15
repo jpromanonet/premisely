@@ -52,7 +52,7 @@ final class PropertyContext
             'UPDATE tasks SET due_date = :today, updated_at = NOW()
              WHERE property_id = :p AND archived_at IS NULL
                AND status IN (\'pending\', \'in_progress\')
-               AND (kind IS NULL OR kind <> \'reparacion\')
+               AND (kind IS NULL OR kind NOT IN (\'reparacion\', \'medico\'))
                AND due_date IS NOT NULL
                AND due_date < :before',
             ['today' => $today, 'before' => $today, 'p' => $pid]

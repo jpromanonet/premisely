@@ -133,6 +133,9 @@ final class RoutineController extends Controller
 
         ActivityLogger::log($pid, 'routine', (int) Connection::lastInsertId(), 'created');
         flash('success', self::createdMessage($type, $schedule));
+        if ($request->input('redirect')) {
+            $this->redirect((string) $request->input('redirect'));
+        }
         $this->redirect(self::habitListPath((string) $request->input('frequency_type', 'daily')));
     }
 
@@ -688,11 +691,14 @@ final class RoutineController extends Controller
 
         $datesByRoutine = [];
         foreach (Connection::fetchAll(
-            'SELECT routine_id, DATE(executed_at) AS d FROM routine_executions
-             WHERE property_id = :pid AND executed_at >= DATE_SUB(:day, INTERVAL 180 DAY)',
-            ['pid' => $propertyId, 'day' => $day . ' 00:00:00']
+            'SELECT routine_id, executed_at FROM routine_executions
+             WHERE property_id = :pid AND executed_at >= :from',
+            [
+                'pid' => $propertyId,
+                'from' => (new DateTimeImmutable($day))->modify('-180 days')->format('Y-m-d') . ' 00:00:00',
+            ]
         ) as $exec) {
-            $datesByRoutine[(int) $exec['routine_id']][] = (string) $exec['d'];
+            $datesByRoutine[(int) $exec['routine_id']][] = substr((string) $exec['executed_at'], 0, 10);
         }
 
         $items = [];
