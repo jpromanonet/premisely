@@ -103,17 +103,18 @@ final class CalendarController extends Controller
 
         $weekStart = (new DateTimeImmutable($day))->modify('monday this week')->format('Y-m-d');
         $weekSpend = Connection::fetchAll(
-            'SELECT public_id, title, amount, currency, completed_at
+            'SELECT public_id, title, amount, currency, completed_at, created_at
              FROM week_spend_items
              WHERE property_id = :p AND archived_at IS NULL AND week_start = :week
                AND (
-                 completed_at IS NULL
-                 OR (completed_at >= :day_start AND completed_at < :day_end)
+                 (completed_at IS NULL AND DATE(created_at) <= :day)
+                 OR (completed_at IS NOT NULL AND completed_at >= :day_start AND completed_at < :day_end)
                )
              ORDER BY completed_at IS NULL DESC, id',
             [
                 'p' => $pid,
                 'week' => $weekStart,
+                'day' => $day,
                 'day_start' => $dayStart,
                 'day_end' => $dayEnd,
             ]
@@ -298,7 +299,7 @@ final class CalendarController extends Controller
         $weekStart = (new DateTimeImmutable($day))->modify('monday this week')->format('Y-m-d');
         Connection::query(
             'INSERT INTO week_spend_items (public_id, property_id, title, amount, currency, week_start, created_by, created_at)
-             VALUES (:pid, :prop, :title, :amount, :currency, :week, :uid, NOW())',
+             VALUES (:pid, :prop, :title, :amount, :currency, :week, :uid, :created_at)',
             [
                 'pid' => ulid(),
                 'prop' => PropertyContext::propertyId(),
@@ -307,6 +308,7 @@ final class CalendarController extends Controller
                 'currency' => PropertyContext::property()['currency'] ?? 'ARS',
                 'week' => $weekStart,
                 'uid' => \Premisely\Core\Auth\Auth::id(),
+                'created_at' => $day . ' ' . date('H:i:s'),
             ]
         );
         flash('success', 'Quedó en gastos de la semana.');
