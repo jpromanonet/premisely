@@ -90,7 +90,7 @@ $base = '/properties/' . $pid . '/weekly-report';
 </section>
 
 <section class="panel week-report-cut week-report-cut--medical">
-    <h2>Temas médicos hechos</h2>
+    <h2>Temas médicos resueltos</h2>
     <?php if ($medical === []): ?>
         <p class="empty-note">Ninguno esta semana.</p>
     <?php else: ?>
@@ -132,8 +132,8 @@ $base = '/properties/' . $pid . '/weekly-report';
 
 <section class="panel week-report-cut week-report-cut--habit">
     <div class="section-head">
-        <h2>Hábitos</h2>
-        <strong><?= (int) $habitsDoneCount ?> hechos</strong>
+        <h2>Hábitos repetidos</h2>
+        <strong><?= (int) $habitsDoneCount ?></strong>
     </div>
     <?php if ($habits === []): ?>
         <p class="empty-note">Sin hábitos marcados esta semana.</p>
@@ -143,7 +143,7 @@ $base = '/properties/' . $pid . '/weekly-report';
                 <li>
                     <strong><?= e((string) $row['title']) ?></strong>
                     <span class="muted">
-                        <?= (int) $row['times'] ?> vez<?= (int) $row['times'] === 1 ? '' : 'es' ?>
+                        <?= (int) $row['times'] ?> <?= (int) $row['times'] === 1 ? 'vez' : 'veces' ?>
                         <?php if ((int) ($row['streak'] ?? 0) > 0): ?>
                             · racha <?= (int) $row['streak'] ?>
                         <?php endif; ?>
@@ -155,7 +155,7 @@ $base = '/properties/' . $pid . '/weekly-report';
 </section>
 
 <section class="panel week-report-cut week-report-cut--note">
-    <h2>Notas hechas</h2>
+    <h2>Notas leídas</h2>
     <?php if ($notes === []): ?>
         <p class="empty-note">Ninguna esta semana.</p>
     <?php else: ?>

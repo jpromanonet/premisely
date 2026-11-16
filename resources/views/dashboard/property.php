@@ -10,11 +10,17 @@
 /** @var int $inventory */
 /** @var int $stockCount */
 /** @var float $monthExpenses */
-/** @var list<array<string,mixed>> $expenseCategories */
+/** @var list<array<string,mixed>> $monthSpend */
+/** @var int $weeksInMonth */
+/** @var int $monthHabitsDone */
+/** @var int $monthTasksDone */
+/** @var int $monthMedicalDone */
+/** @var int $monthRepairsDone */
 /** @var list<array{month:string,total:float}> $expenseTrend */
 /** @var list<array<string,mixed>> $fixedExpenses */
 $pid = $property['public_id'];
 $fixedExpenses = $fixedExpenses ?? [];
+$monthSpend = $monthSpend ?? [];
 $freqLabels = ['monthly' => 'Mensual', 'bimonthly' => 'Bimestral', 'quarterly' => 'Trimestral', 'yearly' => 'Anual'];
 $months = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 $weekdays = [1 => 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
@@ -24,11 +30,6 @@ $dayUrl = url('/properties/' . $pid . '/calendar', ['day' => $today]);
 $habitPct = $habitsTotal > 0 ? (int) round($habitsDone / $habitsTotal * 100) : 0;
 $currency = (string) ($property['currency'] ?? 'ARS');
 $monthNames = [1 => 'ene', 2 => 'feb', 3 => 'mar', 4 => 'abr', 5 => 'may', 6 => 'jun', 7 => 'jul', 8 => 'ago', 9 => 'sep', 10 => 'oct', 11 => 'nov', 12 => 'dic'];
-$barColors = ['#0E6E6A', '#E38B3A', '#3D7A9A', '#7A6BB5', '#1C8A58', '#C44545'];
-$categoryMax = 0.0;
-foreach ($expenseCategories as $row) {
-    $categoryMax = max($categoryMax, abs((float) $row['total']));
-}
 $trendMax = 0.0;
 foreach ($expenseTrend as $point) {
     $trendMax = max($trendMax, abs((float) $point['total']));
@@ -72,7 +73,37 @@ $currentMonth = date('Y-m');
     </a>
 </div>
 
-<h2 class="section-label">Métricas</h2>
+<h2 class="section-label">Este mes</h2>
+<div class="metric-grid metric-grid--panel-month">
+    <a class="metric" href="<?= e(url('/properties/' . $pid . '/weekly-report')) ?>">
+        <span>Gastos del mes</span>
+        <strong><?= e($currency) ?> <?= e(format_money($monthExpenses)) ?></strong>
+        <p>Del calendario</p>
+    </a>
+    <div class="metric">
+        <span>Semanas</span>
+        <strong><?= (int) $weeksInMonth ?></strong>
+        <p>en <?= e($months[(int) date('n')]) ?></p>
+    </div>
+    <a class="metric" href="<?= e(url('/properties/' . $pid . '/routines')) ?>">
+        <span>Hábitos hechos</span>
+        <strong><?= (int) $monthHabitsDone ?></strong>
+    </a>
+    <a class="metric" href="<?= e(url('/properties/' . $pid . '/calendar')) ?>">
+        <span>Tareas hechas</span>
+        <strong><?= (int) $monthTasksDone ?></strong>
+    </a>
+    <a class="metric" href="<?= e(url('/properties/' . $pid . '/calendar')) ?>">
+        <span>Temas médicos</span>
+        <strong><?= (int) $monthMedicalDone ?></strong>
+    </a>
+    <a class="metric" href="<?= e(url('/properties/' . $pid . '/calendar')) ?>">
+        <span>Reparaciones</span>
+        <strong><?= (int) $monthRepairsDone ?></strong>
+    </a>
+</div>
+
+<h2 class="section-label">Casa</h2>
 <div class="metric-grid">
     <a class="metric" href="<?= e(url('/properties/' . $pid . '/stock')) ?>">
         <span>En cero</span>
@@ -82,19 +113,20 @@ $currentMonth = date('Y-m');
         <span>Compras</span>
         <strong><?= (int) $shopping ?></strong>
     </a>
-    <a class="metric" href="<?= e(url('/properties/' . $pid . '/expenses')) ?>">
-        <span>Gastos del mes</span>
-        <strong><?= e($currency) ?> <?= e(format_money($monthExpenses)) ?></strong>
-    </a>
     <a class="metric" href="<?= e(url('/properties/' . $pid . '/inventory')) ?>">
         <span>Inventario</span>
         <strong><?= (int) $inventory ?></strong>
+    </a>
+    <a class="metric" href="<?= e(url('/properties/' . $pid . '/expenses')) ?>">
+        <span>Gastos fijos</span>
+        <strong><?= count($fixedExpenses) ?></strong>
     </a>
 </div>
 
 <div class="report-grid">
     <section class="panel">
         <h2>Gastos del semestre</h2>
+        <p class="muted" style="margin-top:-0.4rem;margin-bottom:0.8rem">Solo gastos cargados en el calendario.</p>
         <div class="report-cols" role="img" aria-label="Gastos de los últimos seis meses">
             <?php foreach ($expenseTrend as $point): ?>
                 <?php
@@ -112,27 +144,28 @@ $currentMonth = date('Y-m');
         </div>
     </section>
     <section class="panel">
-        <h2>Este mes</h2>
-        <?php if ($expenseCategories === []): ?>
-            <p class="empty-note">Sin gastos este mes.</p>
+        <div class="section-head">
+            <h2>Gastos del mes</h2>
+            <a href="<?= e(url('/properties/' . $pid . '/weekly-report')) ?>">Ver informe</a>
+        </div>
+        <?php if ($monthSpend === []): ?>
+            <p class="empty-note">Sin gastos de calendario este mes.</p>
         <?php else: ?>
-            <div class="report-bars">
-                <?php foreach ($expenseCategories as $i => $row): ?>
-                    <?php
-                    $amount = (float) $row['total'];
-                    $width = $categoryMax > 0 ? (int) round(abs($amount) / $categoryMax * 100) : 0;
-                    ?>
-                    <div class="report-bar">
-                        <div class="report-bar__top">
-                            <span><?= e((string) $row['category_name']) ?></span>
-                            <strong><?= e(format_money($amount)) ?></strong>
-                        </div>
-                        <div class="report-bar__track" aria-hidden="true">
-                            <span style="width: <?= $width ?>%; background: <?= e($barColors[$i % count($barColors)]) ?>"></span>
-                        </div>
-                    </div>
+            <ul class="week-report-list">
+                <?php foreach ($monthSpend as $row): ?>
+                    <?php $done = !empty($row['completed_at']); ?>
+                    <li class="<?= $done ? 'is-done' : '' ?>">
+                        <strong><?= e((string) $row['title']) ?></strong>
+                        <span class="muted">
+                            <?= e(format_money($row['amount'])) ?> <?= e((string) ($row['currency'] ?? $currency)) ?>
+                            <?php if ($done): ?> · Hecho<?php endif; ?>
+                        </span>
+                    </li>
                 <?php endforeach; ?>
-            </div>
+            </ul>
+            <p class="report-legend" style="margin-top:12px">
+                Total <?= e($currency) ?> <?= e(format_money($monthExpenses)) ?>
+            </p>
         <?php endif; ?>
     </section>
 </div>
@@ -140,7 +173,7 @@ $currentMonth = date('Y-m');
 <section class="panel">
     <div class="section-head">
         <h2>Gastos fijos</h2>
-        <a href="<?= e(url('/properties/' . $pid . '/expenses')) ?>">Ver gastos</a>
+        <a href="<?= e(url('/properties/' . $pid . '/expenses')) ?>">Ver gastos fijos</a>
     </div>
     <?php if ($fixedExpenses === []): ?>
         <p class="empty-note">Sin gastos fijos activos.</p>

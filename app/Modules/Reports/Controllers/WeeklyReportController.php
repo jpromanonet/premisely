@@ -29,82 +29,100 @@ final class WeeklyReportController extends Controller
         $data = $this->buildWeekData($request);
         $property = PropertyContext::property();
         $currency = (string) ($property['currency'] ?? 'ARS');
-        $pdf = new SimplePdf();
-        $pdf->title('Informe semanal · ' . (string) ($property['name'] ?? 'Premisely'));
-        $pdf->subtitle(
-            'Semana ' . $data['weekNumber'] . ' de ' . $data['weekYear']
-            . ' · ' . $data['rangeLabel']
-        );
-        $pdf->blank();
+        $colors = [
+            'task' => [0.055, 0.431, 0.416],
+            'repair' => [0.788, 0.416, 0.173],
+            'medical' => [0.227, 0.435, 0.659],
+            'spend' => [0.702, 0.227, 0.227],
+            'habit' => [0.831, 0.627, 0.090],
+            'note' => [0.361, 0.396, 0.439],
+        ];
 
-        $pdf->heading('Tareas hechas (' . count($data['tasks']) . ')');
+        $pdf = new SimplePdf();
+        $pdf->banner(
+            'Informe semanal',
+            (string) ($property['name'] ?? 'Premisely') . '  ·  ' . $data['rangeLabel'],
+            'Semana ' . ltrim((string) $data['weekNumber'], '0') . ' del ' . $data['weekYear']
+        );
+        $pdf->metrics([
+            ['label' => 'Tareas resueltas', 'value' => (string) count($data['tasks']), 'color' => $colors['task']],
+            ['label' => 'Reparaciones terminadas', 'value' => (string) count($data['repairs']), 'color' => $colors['repair']],
+            ['label' => 'Temas médicos resueltos', 'value' => (string) count($data['medical']), 'color' => $colors['medical']],
+            ['label' => 'Hábitos repetidos', 'value' => (string) (int) $data['habitsDoneCount'], 'color' => $colors['habit']],
+            ['label' => 'Notas leídas', 'value' => (string) count($data['notes']), 'color' => $colors['note']],
+        ]);
+
+        $pdf->section('Tareas hechas', $colors['task'], (string) count($data['tasks']));
         if ($data['tasks'] === []) {
-            $pdf->line('Ninguna.');
+            $pdf->empty('Ninguna esta semana.');
         } else {
             foreach ($data['tasks'] as $row) {
-                $pdf->line('• ' . (string) $row['title']);
+                $pdf->item((string) $row['title'], format_when($row['completed_at'] ?? ''), true);
             }
         }
 
-        $pdf->heading('Reparaciones hechas (' . count($data['repairs']) . ')');
+        $pdf->section('Reparaciones hechas', $colors['repair'], (string) count($data['repairs']));
         if ($data['repairs'] === []) {
-            $pdf->line('Ninguna.');
+            $pdf->empty('Ninguna esta semana.');
         } else {
             foreach ($data['repairs'] as $row) {
-                $pdf->line('• ' . (string) $row['title']);
+                $pdf->item((string) $row['title'], format_when($row['completed_at'] ?? ''), true);
             }
         }
 
-        $pdf->heading('Temas médicos hechos (' . count($data['medical']) . ')');
+        $pdf->section('Temas médicos resueltos', $colors['medical'], (string) count($data['medical']));
         if ($data['medical'] === []) {
-            $pdf->line('Ninguno.');
+            $pdf->empty('Ninguno esta semana.');
         } else {
             foreach ($data['medical'] as $row) {
-                $pdf->line('• ' . (string) $row['title']);
+                $pdf->item((string) $row['title'], format_when($row['completed_at'] ?? ''), true);
             }
         }
 
-        $pdf->heading('Gastos de la semana (' . format_money($data['spendTotal']) . ' ' . $currency . ')');
+        $pdf->section(
+            'Gastos de la semana',
+            $colors['spend'],
+            format_money($data['spendTotal']) . ' ' . $currency
+        );
         if ($data['spend'] === []) {
-            $pdf->line('Ninguno.');
+            $pdf->empty('Nada planificado esta semana.');
         } else {
             foreach ($data['spend'] as $row) {
-                $done = !empty($row['completed_at']) ? ' [hecho]' : '';
-                $pdf->line(
-                    '• ' . (string) $row['title']
-                    . ' — ' . format_money($row['amount']) . ' '
-                    . (string) ($row['currency'] ?? $currency)
-                    . $done
-                );
+                $done = !empty($row['completed_at']);
+                $meta = format_money($row['amount']) . ' ' . (string) ($row['currency'] ?? $currency)
+                    . ($done ? ' · Hecho' : ' · Pendiente');
+                $pdf->item((string) $row['title'], $meta, $done);
             }
-            $pdf->line('Total: ' . format_money($data['spendTotal']) . ' ' . $currency);
+            $pdf->total('Total de la semana: ' . format_money($data['spendTotal']) . ' ' . $currency, $colors['spend']);
         }
 
-        $pdf->heading(
-            'Hábitos · ' . (int) $data['habitsDoneCount'] . ' hechos en la semana'
+        $pdf->section(
+            'Hábitos repetidos',
+            $colors['habit'],
+            (string) (int) $data['habitsDoneCount']
         );
         if ($data['habits'] === []) {
-            $pdf->line('Sin registros esta semana.');
+            $pdf->empty('Sin hábitos marcados esta semana.');
         } else {
             foreach ($data['habits'] as $row) {
                 $streak = (int) ($row['streak'] ?? 0);
                 $times = (int) ($row['times'] ?? 0);
-                $pdf->line(
-                    '• ' . (string) $row['title']
-                    . ' — ' . $times . ' vez' . ($times === 1 ? '' : 'es')
-                    . ($streak > 0 ? ' · racha ' . $streak : '')
-                );
+                $meta = $times . ' ' . ($times === 1 ? 'vez' : 'veces')
+                    . ($streak > 0 ? ' · racha ' . $streak : '');
+                $pdf->item((string) $row['title'], $meta, true);
             }
         }
 
-        $pdf->heading('Notas hechas (' . count($data['notes']) . ')');
+        $pdf->section('Notas leídas', $colors['note'], (string) count($data['notes']));
         if ($data['notes'] === []) {
-            $pdf->line('Ninguna.');
+            $pdf->empty('Ninguna esta semana.');
         } else {
             foreach ($data['notes'] as $row) {
-                $pdf->line('• ' . (string) $row['title']);
+                $pdf->item((string) $row['title'], format_when($row['completed_at'] ?? ''), true);
             }
         }
+
+        $pdf->footer('Premisely · Informe semanal · Semana ' . $data['weekNumber'] . ' de ' . $data['weekYear']);
 
         $filename = 'informe-semana-' . $data['weekYear'] . '-W' . $data['weekNumber'] . '.pdf';
         $binary = $pdf->render();

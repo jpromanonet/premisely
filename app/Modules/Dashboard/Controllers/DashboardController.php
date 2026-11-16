@@ -96,6 +96,26 @@ final class DashboardController extends Controller
 
         (new StockService())->syncAllWithShopping($pid);
 
+        $monthKey = date('Y-m');
+        $monthStart = $monthKey . '-01';
+        $monthEnd = (new \DateTimeImmutable($monthStart))->modify('last day of this month')->format('Y-m-d');
+        $monthStartTs = $monthStart . ' 00:00:00';
+        $monthEndTs = (new \DateTimeImmutable($monthEnd))->modify('+1 day')->format('Y-m-d') . ' 00:00:00';
+
+        $monthSpend = Connection::fetchAll(
+            'SELECT public_id, title, amount, currency, completed_at, week_start
+             FROM week_spend_items
+             WHERE property_id = :pid AND archived_at IS NULL
+               AND week_start <= :month_end
+               AND DATE_ADD(week_start, INTERVAL 6 DAY) >= :month_start
+             ORDER BY week_start, id',
+            ['pid' => $pid, 'month_start' => $monthStart, 'month_end' => $monthEnd]
+        );
+        $monthExpenses = 0.0;
+        foreach ($monthSpend as $row) {
+            $monthExpenses += (float) $row['amount'];
+        }
+
         $this->view('dashboard/property', [
             'title' => 'Panel · ' . $property['name'],
             'property' => $property,
@@ -124,47 +144,75 @@ final class DashboardController extends Controller
                 'SELECT COUNT(*) FROM stock_items WHERE property_id = :pid AND archived_at IS NULL',
                 ['pid' => $pid]
             ),
-            'monthExpenses' => (float) (Connection::fetchColumn(
-                'SELECT COALESCE(SUM(amount),0) FROM expenses
-                 WHERE property_id = :pid AND archived_at IS NULL
-                   AND spent_at >= DATE_FORMAT(CURDATE(), \'%Y-%m-01\')',
-                ['pid' => $pid]
-            ) ?: 0) + ExpenseHelper::fixedTotalForMonth($pid, date('Y-m')),
-            'expenseCategories' => array_slice(
-                ExpenseHelper::mergeFixedIntoCategories(
-                    $pid,
-                    date('Y-m'),
-                    Connection::fetchAll(
-                        'SELECT COALESCE(c.name, \'Sin categoría\') AS category_name, COALESCE(SUM(e.amount),0) AS total
-                         FROM expenses e
-                         LEFT JOIN expense_categories c ON c.id = e.category_id
-                         WHERE e.property_id = :pid AND e.archived_at IS NULL
-                           AND spent_at >= DATE_FORMAT(CURDATE(), \'%Y-%m-01\')
-                         GROUP BY category_name ORDER BY total DESC',
-                        ['pid' => $pid]
-                    )
-                ),
-                0,
-                6
+            'monthExpenses' => $monthExpenses,
+            'monthSpend' => $monthSpend,
+            'weeksInMonth' => self::weeksInMonth($monthStart),
+            'monthHabitsDone' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM routine_executions e
+                 INNER JOIN routines r ON r.id = e.routine_id
+                 WHERE e.property_id = :pid AND r.archived_at IS NULL
+                   AND e.executed_at >= :a AND e.executed_at < :b',
+                ['pid' => $pid, 'a' => $monthStartTs, 'b' => $monthEndTs]
             ),
-            'expenseTrend' => ExpenseHelper::mergeFixedIntoTrend($pid, $this->expenseTrend($pid)),
+            'monthTasksDone' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM tasks
+                 WHERE property_id = :pid AND archived_at IS NULL AND status = \'done\'
+                   AND completed_at IS NOT NULL
+                   AND completed_at >= :a AND completed_at < :b
+                   AND (kind IS NULL OR kind NOT IN (\'reparacion\', \'medico\'))',
+                ['pid' => $pid, 'a' => $monthStartTs, 'b' => $monthEndTs]
+            ),
+            'monthMedicalDone' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM tasks
+                 WHERE property_id = :pid AND archived_at IS NULL AND status = \'done\'
+                   AND kind = \'medico\'
+                   AND completed_at IS NOT NULL
+                   AND completed_at >= :a AND completed_at < :b',
+                ['pid' => $pid, 'a' => $monthStartTs, 'b' => $monthEndTs]
+            ),
+            'monthRepairsDone' => (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM tasks
+                 WHERE property_id = :pid AND archived_at IS NULL AND status = \'done\'
+                   AND kind = \'reparacion\'
+                   AND completed_at IS NOT NULL
+                   AND completed_at >= :a AND completed_at < :b',
+                ['pid' => $pid, 'a' => $monthStartTs, 'b' => $monthEndTs]
+            ) + (int) Connection::fetchColumn(
+                'SELECT COUNT(*) FROM repair_records
+                 WHERE property_id = :pid AND archived_at IS NULL
+                   AND status IN (\'hecho\', \'done\')
+                   AND closed_at IS NOT NULL
+                   AND closed_at >= :a AND closed_at <= :b',
+                ['pid' => $pid, 'a' => $monthStart, 'b' => $monthEnd]
+            ),
+            'expenseTrend' => $this->weekSpendTrend($pid),
             'fixedExpenses' => ExpenseHelper::activeFixed($pid),
             'canEdit' => PropertyContext::canEdit(),
         ]);
     }
 
+    private static function weeksInMonth(string $monthStart): int
+    {
+        $first = new \DateTimeImmutable($monthStart);
+        $last = $first->modify('last day of this month');
+        $start = $first->modify('monday this week');
+        $end = $last->modify('monday this week');
+        return (int) (($end->getTimestamp() - $start->getTimestamp()) / 604800) + 1;
+    }
+
     /** @return list<array{month:string,total:float}> */
-    private function expenseTrend(int $propertyId): array
+    private function weekSpendTrend(int $propertyId): array
     {
         $month = date('Y-m');
+        $from = (new \DateTimeImmutable($month . '-01'))->modify('-5 months')->format('Y-m-d');
+        $to = (new \DateTimeImmutable($month . '-01'))->modify('first day of next month')->format('Y-m-d');
         $rows = Connection::fetchAll(
-            'SELECT DATE_FORMAT(spent_at, \'%Y-%m\') AS ym, COALESCE(SUM(amount),0) AS total
-             FROM expenses
+            'SELECT DATE_FORMAT(week_start, \'%Y-%m\') AS ym, COALESCE(SUM(amount),0) AS total
+             FROM week_spend_items
              WHERE property_id = :pid AND archived_at IS NULL
-               AND spent_at >= DATE_SUB(STR_TO_DATE(CONCAT(:m, \'-01\'), \'%Y-%m-%d\'), INTERVAL 5 MONTH)
-               AND spent_at < DATE_ADD(STR_TO_DATE(CONCAT(:m2, \'-01\'), \'%Y-%m-%d\'), INTERVAL 1 MONTH)
+               AND week_start >= :from AND week_start < :to
              GROUP BY ym',
-            ['pid' => $propertyId, 'm' => $month, 'm2' => $month]
+            ['pid' => $propertyId, 'from' => $from, 'to' => $to]
         );
         $byMonth = [];
         foreach ($rows as $row) {

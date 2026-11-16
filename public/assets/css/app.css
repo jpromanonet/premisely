@@ -597,6 +597,14 @@ body.modal-open { overflow: hidden; }
 .meal-dots li.meal-card--cena { background: #E8E7F8; }
 .today-grid + .section-label { margin-top: 22px; }
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 8px 0 18px; }
+.metric-grid--panel-month { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.metric-grid--panel-month .metric:nth-child(1) { border-top-color: #B33A3A; }
+.metric-grid--panel-month .metric:nth-child(2) { border-top-color: #5C6570; }
+.metric-grid--panel-month .metric:nth-child(3) { border-top-color: #D4A017; }
+.metric-grid--panel-month .metric:nth-child(4) { border-top-color: #0E6E6A; }
+.metric-grid--panel-month .metric:nth-child(5) { border-top-color: #3A6FA8; }
+.metric-grid--panel-month .metric:nth-child(6) { border-top-color: #C96A2C; }
+.metric-grid--panel-month .metric p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.82rem; }
 .metric-grid--weekly .metric:nth-child(1) { border-top-color: #0E6E6A; }
 .metric-grid--weekly .metric:nth-child(2) { border-top-color: #C96A2C; }
 .metric-grid--weekly .metric:nth-child(3) { border-top-color: #3A6FA8; }
