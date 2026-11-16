@@ -124,18 +124,9 @@ final class WeeklyReportController extends Controller
 
         $pdf->footer('Premisely · Informe semanal · Semana ' . $data['weekNumber'] . ' de ' . $data['weekYear']);
 
-        $filename = 'informe-semana-' . $data['weekYear'] . '-W' . $data['weekNumber'] . '.pdf';
-        $binary = $pdf->render();
-        (new Response(
-            $binary,
-            200,
-            [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-                'Content-Length' => (string) strlen($binary),
-                'Cache-Control' => 'private, max-age=0, must-revalidate',
-            ]
-        ))->send();
+        $weekNum = ltrim((string) $data['weekNumber'], '0') ?: '0';
+        $filename = 'informe-semanal-' . $data['weekYear'] . '-semana-' . $weekNum . '.pdf';
+        Response::download($pdf->render(), $filename, 'application/pdf');
     }
 
     /** @return array<string, mixed> */
