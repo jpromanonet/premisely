@@ -597,6 +597,25 @@ body.modal-open { overflow: hidden; }
 .meal-dots li.meal-card--cena { background: #E8E7F8; }
 .today-grid + .section-label { margin-top: 22px; }
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 8px 0 18px; }
+.metric-grid--weekly .metric:nth-child(1) { border-top-color: #0E6E6A; }
+.metric-grid--weekly .metric:nth-child(2) { border-top-color: #C96A2C; }
+.metric-grid--weekly .metric:nth-child(3) { border-top-color: #3A6FA8; }
+.metric-grid--weekly .metric:nth-child(4) { border-top-color: #D4A017; }
+.week-report-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.week-report-list li {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px;
+  padding: 8px 10px; background: #fff; border: 1px solid var(--line); border-radius: 10px;
+}
+.week-report-list li.is-done strong { text-decoration: line-through; color: var(--muted); font-weight: 500; }
+.week-report-list .muted { font-size: 0.86rem; }
+.week-report-cut--task { border-top: 3px solid #0E6E6A; }
+.week-report-cut--repair { border-top: 3px solid #C96A2C; }
+.week-report-cut--medical { border-top: 3px solid #3A6FA8; }
+.week-report-cut--spend { border-top: 3px solid #B33A3A; }
+.week-report-cut--habit { border-top: 3px solid #D4A017; }
+.week-report-cut--note { border-top: 3px solid #5C6570; }
+.week-report-cut .section-head { margin-bottom: 0.6rem; }
+.week-report-cut h2 { margin: 0 0 0.6rem; font-size: 1rem; }
 .metric {
   display: block; padding: 16px; background: #fff; border: 1px solid var(--line);
   border-top: 3px solid var(--brand); border-radius: 14px; color: inherit; text-decoration: none;

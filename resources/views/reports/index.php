@@ -3,17 +3,16 @@
 /** @var string $month */
 /** @var array<string,mixed> $inventory */
 /** @var array<string,mixed> $stock */
-/** @var array<string,mixed> $expenses */
 /** @var list<array<string,mixed>> $fixedExpenses */
-/** @var list<array{month:string,total:float}> $trend */
+/** @var float $fixedTotal */
 /** @var int $tasksDone */
 /** @var int $habitsDone */
 /** @var int $shopping */
 $pid = $property['public_id'];
 $fixedExpenses = $fixedExpenses ?? [];
+$fixedTotal = (float) ($fixedTotal ?? 0);
 $freqLabels = ['monthly' => 'Mensual', 'bimonthly' => 'Bimestral', 'quarterly' => 'Trimestral', 'yearly' => 'Anual'];
 $currency = (string) ($property['currency'] ?? 'ARS');
-$monthNames = [1 => 'ene', 2 => 'feb', 3 => 'mar', 4 => 'abr', 5 => 'may', 6 => 'jun', 7 => 'jul', 8 => 'ago', 9 => 'sep', 10 => 'oct', 11 => 'nov', 12 => 'dic'];
 $statusLabels = [
     'activo' => 'En casa',
     'en_reparacion' => 'En reparación',
@@ -21,14 +20,6 @@ $statusLabels = [
     'archivado' => 'Archivado',
 ];
 $barColors = ['#0E6E6A', '#E38B3A', '#3D7A9A', '#7A6BB5', '#1C8A58', '#C44545'];
-$categoryMax = 0.0;
-foreach ($expenses['by_category'] as $row) {
-    $categoryMax = max($categoryMax, abs((float) $row['total']));
-}
-$trendMax = 0.0;
-foreach ($trend as $point) {
-    $trendMax = max($trendMax, abs((float) $point['total']));
-}
 $statusMax = 0;
 foreach ($inventory['by_status'] as $row) {
     $statusMax = max($statusMax, (int) $row['total']);
@@ -39,7 +30,7 @@ $stockTotal = max(1, (int) $stock['count']);
 <div class="page-header">
     <div>
         <h1>Reportes</h1>
-        <p>Gastos, stock y lo que se hizo en el mes.</p>
+        <p>Gastos fijos, stock y lo que se hizo en el mes.</p>
     </div>
     <form method="get" action="<?= e(form_target()) ?>" class="actions">
         <input type="hidden" name="r" value="/properties/<?= e($pid) ?>/reports">
@@ -49,9 +40,9 @@ $stockTotal = max(1, (int) $stock['count']);
 
 <div class="metric-grid">
     <div class="metric">
-        <span>Gastos</span>
-        <strong><?= e($currency) ?> <?= e(format_money($expenses['month_total'])) ?></strong>
-        <p>Fijos <?= e(format_money($expenses['fixed_total'] ?? 0)) ?> · Movimientos <?= e(format_money($expenses['movements_total'] ?? 0)) ?></p>
+        <span>Gastos fijos</span>
+        <strong><?= e($currency) ?> <?= e(format_money($fixedTotal)) ?></strong>
+        <p><?= count($fixedExpenses) ?> en este mes</p>
     </div>
     <div class="metric">
         <span>Inventario</span>
@@ -73,7 +64,7 @@ $stockTotal = max(1, (int) $stock['count']);
 <section class="panel">
     <div class="section-head">
         <h2>Gastos fijos del mes</h2>
-        <a href="<?= e(url('/properties/' . $pid . '/expenses')) ?>">Ver gastos</a>
+        <a href="<?= e(url('/properties/' . $pid . '/expenses')) ?>">Ver gastos fijos</a>
     </div>
     <?php if ($fixedExpenses === []): ?>
         <p class="empty-note">Sin gastos fijos para este mes.</p>
@@ -95,52 +86,6 @@ $stockTotal = max(1, (int) $stock['count']);
         </div>
     <?php endif; ?>
 </section>
-
-<div class="report-grid">
-    <section class="panel">
-        <h2>Gastos por categoría</h2>
-        <?php if ($expenses['by_category'] === []): ?>
-            <p class="empty-note">Sin gastos este mes.</p>
-        <?php else: ?>
-            <div class="report-bars">
-                <?php foreach ($expenses['by_category'] as $i => $row): ?>
-                    <?php
-                    $amount = (float) $row['total'];
-                    $width = $categoryMax > 0 ? (int) round(abs($amount) / $categoryMax * 100) : 0;
-                    ?>
-                    <div class="report-bar">
-                        <div class="report-bar__top">
-                            <span><?= e((string) $row['category_name']) ?></span>
-                            <strong><?= e(format_money($amount)) ?></strong>
-                        </div>
-                        <div class="report-bar__track" aria-hidden="true">
-                            <span style="width: <?= $width ?>%; background: <?= e($barColors[$i % count($barColors)]) ?>"></span>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-    </section>
-
-    <section class="panel">
-        <h2>Últimos 6 meses</h2>
-        <div class="report-cols" role="img" aria-label="Gastos de los últimos seis meses">
-            <?php foreach ($trend as $point): ?>
-                <?php
-                $parts = explode('-', $point['month']);
-                $label = $monthNames[(int) ($parts[1] ?? 1)] ?? $point['month'];
-                $height = $trendMax > 0 ? (int) round(abs((float) $point['total']) / $trendMax * 100) : 0;
-                $current = $point['month'] === $month;
-                ?>
-                <div class="report-col<?= $current ? ' is-current' : '' ?>">
-                    <b><?= $height > 0 ? e(number_format((float) $point['total'] / 1000, 0, ',', '.')) . 'k' : '' ?></b>
-                    <div class="report-col__track"><span style="height: <?= $height ?>%"></span></div>
-                    <small><?= e($label) ?></small>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </section>
-</div>
 
 <div class="report-grid">
     <section class="panel">

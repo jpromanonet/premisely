@@ -266,6 +266,8 @@ $router->post('/properties/{property}/calendar/notes/{note}/toggle', [\Premisely
 $router->post('/properties/{property}/calendar/notes/{note}/delete', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'destroyNote'], $propertyCsrf);
 $router->post('/properties/{property}/calendar/notes/{note}', [\Premisely\Modules\Calendar\Controllers\CalendarController::class, 'updateNote'], $propertyCsrf);
 $router->get('/properties/{property}/planning', [\Premisely\Modules\Planning\Controllers\PlanningController::class, 'weekly'], $property);
+$router->get('/properties/{property}/weekly-report', [\Premisely\Modules\Reports\Controllers\WeeklyReportController::class, 'index'], $property);
+$router->get('/properties/{property}/weekly-report/pdf', [\Premisely\Modules\Reports\Controllers\WeeklyReportController::class, 'pdf'], $property);
 $router->get('/properties/{property}/reports', [\Premisely\Modules\Reports\Controllers\ReportController::class, 'index'], $property);
 $router->get('/properties/{property}/inventory/{item}/qr', [\Premisely\Modules\Qr\Controllers\QrController::class, 'show'], $property);
 $router->post('/properties/{property}/inventory/{item}/warranties', [\Premisely\Modules\Inventory\Controllers\WarrantyController::class, 'store'], $propertyCsrf);
