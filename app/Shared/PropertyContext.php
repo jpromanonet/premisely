@@ -40,30 +40,14 @@ final class PropertyContext
         return in_array(self::role(), ['owner', 'admin', 'member', 'collaborator'], true);
     }
 
-    /** Pending day-tasks move to today once that day has passed. Repairs stay undated. */
+    /**
+     * Calendar items stay on their start day and remain visible forward while open.
+     * No longer bumps due_date/note_date to today (that made some appear only "today"
+     * and others show on past days).
+     */
     public static function carryOpenTasks(): void
     {
-        $pid = self::propertyId();
-        if ($pid <= 0) {
-            return;
-        }
-        $today = date('Y-m-d');
-        Connection::query(
-            'UPDATE tasks SET due_date = :today, updated_at = NOW()
-             WHERE property_id = :p AND archived_at IS NULL
-               AND status IN (\'pending\', \'in_progress\')
-               AND (kind IS NULL OR kind NOT IN (\'reparacion\', \'medico\'))
-               AND due_date IS NOT NULL
-               AND due_date < :before',
-            ['today' => $today, 'before' => $today, 'p' => $pid]
-        );
-        Connection::query(
-            'UPDATE calendar_notes SET note_date = :today
-             WHERE property_id = :p AND archived_at IS NULL
-               AND completed_at IS NULL
-               AND note_date < :before',
-            ['today' => $today, 'before' => $today, 'p' => $pid]
-        );
+        // Intentionally empty: visibility is due_date/note_date <= selected day.
     }
 
     /** @return list<array<string, mixed>> */

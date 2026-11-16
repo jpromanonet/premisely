@@ -40,38 +40,44 @@ final class CalendarController extends Controller
         $gridStart = $monthStart->modify('monday this week');
         $gridEnd = $monthEnd->modify('sunday this week');
 
+        // Backfill start day for open repairs/medical that still have null due_date.
         Connection::query(
-            'UPDATE tasks SET due_date = NULL, updated_at = NOW()
-             WHERE property_id = :p AND kind IN (\'reparacion\', \'medico\') AND due_date IS NOT NULL AND archived_at IS NULL',
-            ['p' => $pid]
+            'UPDATE tasks SET due_date = DATE(created_at), updated_at = :upd
+             WHERE property_id = :p AND archived_at IS NULL
+               AND kind IN (\'reparacion\', \'medico\')
+               AND due_date IS NULL
+               AND status IN (\'pending\', \'in_progress\')',
+            ['p' => $pid, 'upd' => date('Y-m-d H:i:s')]
+        );
+        Connection::query(
+            'UPDATE tasks SET due_date = DATE(created_at), updated_at = :upd
+             WHERE property_id = :p AND archived_at IS NULL
+               AND (kind IS NULL OR kind NOT IN (\'reparacion\', \'medico\'))
+               AND due_date IS NULL
+               AND status IN (\'pending\', \'in_progress\')',
+            ['p' => $pid, 'upd' => date('Y-m-d H:i:s')]
         );
 
+        $dayStart = $day . ' 00:00:00';
+        $dayEnd = (new DateTimeImmutable($day))->modify('+1 day')->format('Y-m-d') . ' 00:00:00';
         $openKinds = '(t.kind IS NULL OR t.kind NOT IN (\'reparacion\', \'medico\'))';
+        // Visible from start day forward while open; when done, only on the completion day.
+        $forwardOpen = '(t.status IN (\'pending\', \'in_progress\') AND COALESCE(t.due_date, DATE(t.created_at)) <= :day)';
+        $doneThatDay = '(t.status = \'done\' AND t.completed_at IS NOT NULL AND t.completed_at >= :day_start AND t.completed_at < :day_end)';
+
         $tasks = Connection::fetchAll(
             'SELECT t.public_id, t.title, t.kind, t.status, t.priority, t.due_date, t.completed_at,
                     COALESCE(NULLIF(u.name, \'\'), m.display_name) AS assignee_name
              FROM tasks t
              LEFT JOIN property_members m ON m.id = t.assignee_member_id
              LEFT JOIN users u ON u.id = m.user_id
-             WHERE t.property_id = :p AND t.archived_at IS NULL AND t.due_date = :day
+             WHERE t.property_id = :p AND t.archived_at IS NULL
                AND ' . $openKinds . '
+               AND (' . $forwardOpen . ' OR ' . $doneThatDay . ')
              ORDER BY FIELD(t.status, \'pending\', \'in_progress\', \'done\', \'cancelled\'), t.title',
-            ['p' => $pid, 'day' => $day]
+            ['p' => $pid, 'day' => $day, 'day_start' => $dayStart, 'day_end' => $dayEnd]
         );
-        $undated = $day === $today
-            ? Connection::fetchAll(
-                'SELECT t.public_id, t.title, t.kind, t.status, t.priority, t.due_date,
-                        COALESCE(NULLIF(u.name, \'\'), m.display_name) AS assignee_name
-                 FROM tasks t
-                 LEFT JOIN property_members m ON m.id = t.assignee_member_id
-                 LEFT JOIN users u ON u.id = m.user_id
-                 WHERE t.property_id = :p AND t.archived_at IS NULL AND t.due_date IS NULL
-                   AND t.status IN (\'pending\', \'in_progress\')
-                   AND ' . $openKinds . '
-                 ORDER BY t.title',
-                ['p' => $pid]
-            )
-            : [];
+        $undated = [];
         $repairTasks = Connection::fetchAll(
             'SELECT t.public_id, t.title, t.status, t.priority, t.completed_at,
                     COALESCE(NULLIF(u.name, \'\'), m.display_name) AS assignee_name
@@ -79,17 +85,9 @@ final class CalendarController extends Controller
              LEFT JOIN property_members m ON m.id = t.assignee_member_id
              LEFT JOIN users u ON u.id = m.user_id
              WHERE t.property_id = :p AND t.archived_at IS NULL AND t.kind = \'reparacion\'
-               AND (
-                 t.status IN (\'pending\', \'in_progress\')
-                 OR (t.status = \'done\' AND t.completed_at IS NOT NULL
-                     AND t.completed_at >= :day_start AND t.completed_at < :day_end)
-               )
+               AND (' . $forwardOpen . ' OR ' . $doneThatDay . ')
              ORDER BY FIELD(t.status, \'pending\', \'in_progress\', \'done\'), t.title',
-            [
-                'p' => $pid,
-                'day_start' => $day . ' 00:00:00',
-                'day_end' => (new DateTimeImmutable($day))->modify('+1 day')->format('Y-m-d') . ' 00:00:00',
-            ]
+            ['p' => $pid, 'day' => $day, 'day_start' => $dayStart, 'day_end' => $dayEnd]
         );
         $medicalTasks = Connection::fetchAll(
             'SELECT t.public_id, t.title, t.status, t.priority, t.completed_at,
@@ -98,22 +96,12 @@ final class CalendarController extends Controller
              LEFT JOIN property_members m ON m.id = t.assignee_member_id
              LEFT JOIN users u ON u.id = m.user_id
              WHERE t.property_id = :p AND t.archived_at IS NULL AND t.kind = \'medico\'
-               AND (
-                 t.status IN (\'pending\', \'in_progress\')
-                 OR (t.status = \'done\' AND t.completed_at IS NOT NULL
-                     AND t.completed_at >= :day_start AND t.completed_at < :day_end)
-               )
+               AND (' . $forwardOpen . ' OR ' . $doneThatDay . ')
              ORDER BY FIELD(t.status, \'pending\', \'in_progress\', \'done\'), t.title',
-            [
-                'p' => $pid,
-                'day_start' => $day . ' 00:00:00',
-                'day_end' => (new DateTimeImmutable($day))->modify('+1 day')->format('Y-m-d') . ' 00:00:00',
-            ]
+            ['p' => $pid, 'day' => $day, 'day_start' => $dayStart, 'day_end' => $dayEnd]
         );
 
         $weekStart = (new DateTimeImmutable($day))->modify('monday this week')->format('Y-m-d');
-        $dayStart = $day . ' 00:00:00';
-        $dayEnd = (new DateTimeImmutable($day))->modify('+1 day')->format('Y-m-d') . ' 00:00:00';
         $weekSpend = Connection::fetchAll(
             'SELECT public_id, title, amount, currency, completed_at
              FROM week_spend_items
@@ -155,7 +143,7 @@ final class CalendarController extends Controller
                AND (
                  (
                    status IN (\'pendiente\', \'en_curso\', \'open\', \'in_progress\')
-                   AND (reported_at = :day OR (:today = :day2 AND reported_at < :day3))
+                   AND reported_at IS NOT NULL AND reported_at <= :day
                  )
                  OR (
                    status IN (\'hecho\', \'done\')
@@ -166,18 +154,19 @@ final class CalendarController extends Controller
             [
                 'p' => $pid,
                 'day' => $day,
-                'today' => $today,
-                'day2' => $day,
-                'day3' => $day,
                 'closed_day' => $day,
             ]
         );
 
         $notes = Connection::fetchAll(
             'SELECT public_id, title, notes, completed_at, note_date FROM calendar_notes
-             WHERE property_id = :p AND archived_at IS NULL AND note_date = :day
+             WHERE property_id = :p AND archived_at IS NULL
+               AND (
+                 (completed_at IS NULL AND note_date <= :day)
+                 OR (completed_at IS NOT NULL AND completed_at >= :day_start AND completed_at < :day_end)
+               )
              ORDER BY completed_at IS NULL DESC, title',
-            ['p' => $pid, 'day' => $day]
+            ['p' => $pid, 'day' => $day, 'day_start' => $dayStart, 'day_end' => $dayEnd]
         );
 
         $marks = [];
@@ -509,18 +498,17 @@ final class CalendarController extends Controller
             $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar');
         }
 
-        $today = date('Y-m-d');
         $now = date('Y-m-d H:i:s');
         if (empty($note['completed_at'])) {
             Connection::query(
-                'UPDATE calendar_notes SET completed_at = :done_at, note_date = :day WHERE id = :id',
-                ['done_at' => $now, 'day' => $today, 'id' => $note['id']]
+                'UPDATE calendar_notes SET completed_at = :done_at WHERE id = :id',
+                ['done_at' => $now, 'id' => $note['id']]
             );
             flash('success', 'Nota tachada.');
         } else {
             Connection::query(
-                'UPDATE calendar_notes SET completed_at = NULL, note_date = :day WHERE id = :id',
-                ['day' => $today, 'id' => $note['id']]
+                'UPDATE calendar_notes SET completed_at = NULL WHERE id = :id',
+                ['id' => $note['id']]
             );
             flash('success', 'Nota reabierta.');
         }

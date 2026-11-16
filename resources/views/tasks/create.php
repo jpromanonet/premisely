@@ -25,6 +25,7 @@ $heading = match ($kind) {
     <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks')) ?>" class="stack">
         <?= csrf_field() ?>
         <input type="hidden" name="redirect" value="<?= e($back) ?>">
+        <input type="hidden" name="day" value="<?= e((string) ($due ?: date('Y-m-d'))) ?>">
         <div class="form-grid">
             <label>Título <input name="title" required></label>
             <label>Tipo

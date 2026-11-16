@@ -449,6 +449,7 @@ foreach ($taskModals as $tm):
         <form method="post" action="<?= e(url('/properties/' . $pid . '/tasks')) ?>" class="stack">
             <?= csrf_field() ?>
             <input type="hidden" name="kind" value="<?= e($tm['kind']) ?>">
+            <input type="hidden" name="day" value="<?= e($day) ?>">
             <input type="hidden" name="redirect" value="<?= e($back) ?>">
             <div class="form-grid">
                 <label>Título <input name="title" required></label>
@@ -514,9 +515,9 @@ foreach ($taskModals as $tm):
         <form method="post" action="<?= e(url('/properties/' . $pid . '/calendar/notes')) ?>" class="stack">
             <?= csrf_field() ?>
             <input type="hidden" name="redirect" value="<?= e($back) ?>">
+            <input type="hidden" name="note_date" value="<?= e($day) ?>">
             <div class="form-grid">
                 <label>Título <input name="title" required></label>
-                <label>Fecha <input type="date" name="note_date" value="<?= e($day) ?>"></label>
             </div>
             <div class="actions">
                 <button class="btn" type="submit">Agregar nota</button>

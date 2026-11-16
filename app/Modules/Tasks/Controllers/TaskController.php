@@ -58,13 +58,18 @@ final class TaskController extends Controller
         }
 
         $pid = PropertyContext::propertyId();
+        $due = (string) ($request->input('day') ?: $request->input('due') ?: date('Y-m-d'));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $due)) {
+            $due = date('Y-m-d');
+        }
+        $now = date('Y-m-d H:i:s');
         Connection::query(
             'INSERT INTO tasks (
                 public_id, property_id, space_id, assignee_member_id, title, description,
                 priority, kind, status, due_date, tags, created_by, created_at
              ) VALUES (
                 :public_id, :property_id, :space_id, :assignee_member_id, :title, :description,
-                :priority, :kind, :status, :due_date, :tags, :created_by, NOW()
+                :priority, :kind, :status, :due_date, :tags, :created_by, :created_at
              )',
             [
                 'public_id' => ulid(),
@@ -78,11 +83,10 @@ final class TaskController extends Controller
                 'priority' => (string) ($request->input('priority') ?: 'normal'),
                 'kind' => self::normalizeKind((string) $request->input('kind')),
                 'status' => 'pending',
-                'due_date' => in_array(self::normalizeKind((string) $request->input('kind')), ['reparacion', 'medico'], true)
-                    ? null
-                    : date('Y-m-d'),
+                'due_date' => $due,
                 'tags' => $request->input('tags'),
                 'created_by' => Auth::id(),
+                'created_at' => $now,
             ]
         );
 
@@ -205,20 +209,14 @@ final class TaskController extends Controller
         }
 
         $now = date('Y-m-d H:i:s');
-        $today = date('Y-m-d');
-        $kind = self::normalizeKind((string) ($task['kind'] ?? 'tarea'));
-        $setDue = $status === 'done' && !in_array($kind, ['reparacion', 'medico'], true);
         Connection::query(
             'UPDATE tasks SET status = :status,
              completed_at = :completed_at,
-             due_date = CASE WHEN :set_due = 1 THEN :due_date ELSE due_date END,
              updated_at = :updated_at
              WHERE id = :id',
             [
                 'status' => $status,
                 'completed_at' => $status === 'done' ? $now : null,
-                'set_due' => $setDue ? 1 : 0,
-                'due_date' => $today,
                 'updated_at' => $now,
                 'id' => $task['id'],
             ]
