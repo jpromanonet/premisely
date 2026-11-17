@@ -37,13 +37,23 @@ final class SimplePdf
         ];
     }
 
-    public function item(string $text, string $meta = '', bool $done = false): void
+    /** @param array{0:float,1:float,2:float}|null $color */
+    public function item(string $text, string $meta = '', bool $done = false, ?array $color = null): void
     {
         $this->blocks[] = [
             'type' => 'item',
             'text' => $text,
             'meta' => $meta,
             'done' => $done,
+            'color' => $color,
+        ];
+    }
+
+    public function divider(string $label = ''): void
+    {
+        $this->blocks[] = [
+            'type' => 'divider',
+            'label' => $label,
         ];
     }
 
@@ -204,18 +214,43 @@ final class SimplePdf
                 continue;
             }
 
+            if ($type === 'divider') {
+                $label = trim((string) ($block['label'] ?? ''));
+                $need = $label !== '' ? 42.0 : 28.0;
+                $ensure($need);
+                $y -= 10;
+                $ops[] = self::rect($marginX, $y - 1.5, $contentW, 1.5, [0.78, 0.80, 0.83], true);
+                $y -= 10;
+                if ($label !== '') {
+                    $ops[] = self::text($marginX, $y - 8, self::winAnsi($label), 9, true, [0.42, 0.45, 0.50]);
+                    $y -= 18;
+                } else {
+                    $y -= 6;
+                }
+                continue;
+            }
+
             if ($type === 'item') {
                 $meta = (string) $block['meta'];
+                /** @var array{0:float,1:float,2:float}|null $accent */
+                $accent = is_array($block['color'] ?? null) ? $block['color'] : null;
                 $chunks = self::wrap((string) $block['text'], 62);
                 $rows = max(1, count($chunks));
                 $h = 12.0 + $rows * 12.0 + ($meta !== '' ? 11.0 : 0);
-                $ensure($h + 6);
-                $ops[] = self::roundish($marginX, $y - $h, $contentW, $h, [1, 1, 1]);
-                $ops[] = self::circle($marginX + 14, $y - 14, 3.2, !empty($block['done']) ? [0.055, 0.431, 0.416] : [0.78, 0.8, 0.82]);
+                $ensure($h + 8);
+                $bg = $accent ? self::tint($accent, 0.90) : [1, 1, 1];
+                $ops[] = self::roundish($marginX, $y - $h, $contentW, $h, $bg);
+                if ($accent) {
+                    $ops[] = self::rect($marginX, $y - $h, 4, $h, $accent, true);
+                }
+                $dot = !empty($block['done'])
+                    ? [0.055, 0.431, 0.416]
+                    : ($accent ?: [0.78, 0.8, 0.82]);
+                $ops[] = self::circle($marginX + 16, $y - 14, 3.2, $dot);
                 $ty = $y - 16;
                 foreach ($chunks as $chunk) {
                     $ops[] = self::text(
-                        $marginX + 26,
+                        $marginX + 28,
                         $ty,
                         self::winAnsi($chunk),
                         10,
@@ -225,9 +260,10 @@ final class SimplePdf
                     $ty -= 12;
                 }
                 if ($meta !== '') {
-                    $ops[] = self::text($marginX + 26, $ty, self::winAnsi($meta), 8, false, [0.45, 0.48, 0.52]);
+                    $metaColor = $accent ?: [0.45, 0.48, 0.52];
+                    $ops[] = self::text($marginX + 28, $ty, self::winAnsi($meta), 8, true, $metaColor);
                 }
-                $y -= $h + 5;
+                $y -= $h + 7;
                 continue;
             }
 

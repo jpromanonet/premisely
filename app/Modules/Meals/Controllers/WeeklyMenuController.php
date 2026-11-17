@@ -109,14 +109,17 @@ final class WeeklyMenuController extends Controller
                     continue;
                 }
                 $hasAny = true;
+                $color = $mealColors[$slot] ?? null;
                 foreach ($meals as $meal) {
-                    $pdf->item((string) $meal['title'], $slotLabel, false);
+                    $pdf->item((string) $meal['title'], $slotLabel, false, $color);
                 }
             }
             if (!$hasAny) {
                 $pdf->empty('Sin comidas cargadas.');
             }
         }
+
+        $pdf->divider('Colaciones, snacks, ingredientes y reglas');
 
         foreach (self::snackGroups() as $group) {
             $pdf->section($group['label'] . ' permitidos', $snackAccent);
