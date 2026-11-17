@@ -55,6 +55,7 @@ $isActive = static function (string $needle) use ($currentPath): bool {
 
                 <div class="nav-section">Día a día</div>
                 <a class="<?= $isActive('/calendar') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/calendar')) ?>"><span class="nav__icon">☉</span> Calendario</a>
+                <a class="<?= $isActive('/weekly-menu') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/weekly-menu')) ?>"><span class="nav__icon">🍴</span> Menú semanal</a>
                 <a class="<?= $isActive('/weekly-report') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/weekly-report')) ?>"><span class="nav__icon">◫</span> Informe semanal</a>
                 <a class="<?= $isActive('/routines') ? 'active' : '' ?>" href="<?= e(url('/properties/' . $pid . '/routines')) ?>"><span class="nav__icon">↻</span> Hábitos</a>
 

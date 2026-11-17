@@ -81,11 +81,12 @@ final class DashboardController extends Controller
                AND status IN (\'pendiente\', \'en_curso\', \'open\', \'in_progress\')',
             ['pid' => $pid]
         );
+        $weekday = (int) (new \DateTimeImmutable($today))->format('N');
         $meals = Connection::fetchAll(
-            'SELECT slot, COUNT(*) AS n FROM meal_entries
-             WHERE property_id = :pid AND meal_date = :day
+            'SELECT slot, COUNT(*) AS n FROM weekly_menu_items
+             WHERE property_id = :pid AND weekday = :weekday
              GROUP BY slot',
-            ['pid' => $pid, 'day' => $today]
+            ['pid' => $pid, 'weekday' => $weekday]
         );
         $filled = [];
         foreach ($meals as $meal) {

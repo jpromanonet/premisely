@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    "CREATE TABLE IF NOT EXISTS weekly_menu_ingredient_categories (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        public_id CHAR(26) NOT NULL,
+        property_id BIGINT UNSIGNED NOT NULL,
+        name VARCHAR(120) NOT NULL,
+        sort_order INT NOT NULL DEFAULT 0,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_wm_ing_cat_public_id (public_id),
+        KEY idx_wm_ing_cat_property (property_id, sort_order, id),
+        CONSTRAINT fk_wm_ing_cat_property FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+    "CREATE TABLE IF NOT EXISTS weekly_menu_ingredients (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        public_id CHAR(26) NOT NULL,
+        property_id BIGINT UNSIGNED NOT NULL,
+        category_id BIGINT UNSIGNED NULL,
+        title VARCHAR(200) NOT NULL,
+        sort_order INT NOT NULL DEFAULT 0,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_wm_ing_public_id (public_id),
+        KEY idx_wm_ing_property (property_id, category_id, sort_order, id),
+        CONSTRAINT fk_wm_ing_property FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE,
+        CONSTRAINT fk_wm_ing_category FOREIGN KEY (category_id) REFERENCES weekly_menu_ingredient_categories(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+];

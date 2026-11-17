@@ -128,13 +128,6 @@ final class CalendarController extends Controller
 
         $habitBoard = RoutineController::forDay($pid, $day);
 
-        $meals = Connection::fetchAll(
-            'SELECT public_id, slot, title, notes FROM meal_entries
-             WHERE property_id = :p AND meal_date = :day
-             ORDER BY FIELD(slot, \'desayuno\', \'almuerzo\', \'merienda\', \'cena\'), id',
-            ['p' => $pid, 'day' => $day]
-        );
-
         \Premisely\Modules\Repairs\Controllers\RepairController::archiveCopiesOfTasks($pid);
 
         $repairs = Connection::fetchAll(
@@ -208,15 +201,6 @@ final class CalendarController extends Controller
             }
             $markCursor = $markCursor->add(new DateInterval('P1D'));
         }
-        foreach (Connection::fetchAll(
-            'SELECT meal_date AS d, COUNT(*) AS n FROM meal_entries
-             WHERE property_id = :p AND meal_date BETWEEN :a AND :b
-             GROUP BY meal_date',
-            ['p' => $pid, 'a' => $gridStart->format('Y-m-d'), 'b' => $gridEnd->format('Y-m-d')]
-        ) as $row) {
-            $marks[$row['d']] = ($marks[$row['d']] ?? 0) + (int) $row['n'];
-        }
-
         $weeks = [];
         $cursor = $gridStart;
         while ($cursor <= $gridEnd) {
@@ -252,7 +236,6 @@ final class CalendarController extends Controller
             'weekSpendTotal' => $weekSpendTotal,
             'weekStart' => $weekStart,
             'habits' => $habitBoard['items'],
-            'meals' => $meals,
             'repairs' => $repairs,
             'notes' => $notes,
             'spaces' => Connection::fetchAll(

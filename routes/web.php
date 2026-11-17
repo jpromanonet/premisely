@@ -229,13 +229,28 @@ $router->get('/properties/{property}/boxes/{box}', [\Premisely\Modules\Boxes\Con
 $router->post('/properties/{property}/boxes/{box}/items', [\Premisely\Modules\Boxes\Controllers\BoxController::class, 'addItem'], $propertyCsrf);
 $router->post('/properties/{property}/boxes/{box}/archive', [\Premisely\Modules\Boxes\Controllers\BoxController::class, 'archive'], $propertyCsrf);
 
-// V1.5 — Meals
-$router->get('/properties/{property}/meals', [\Premisely\Modules\Meals\Controllers\MealController::class, 'index'], $property);
+// V1.5 — Meals (legacy routes redirect / create kept for old links)
+$router->get('/properties/{property}/meals', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'index'], $property);
 $router->get('/properties/{property}/meals/create', [\Premisely\Modules\Meals\Controllers\MealController::class, 'create'], $property);
 $router->post('/properties/{property}/meals', [\Premisely\Modules\Meals\Controllers\MealController::class, 'store'], $propertyCsrf);
 $router->get('/properties/{property}/meals/{meal}/edit', [\Premisely\Modules\Meals\Controllers\MealController::class, 'edit'], $property);
 $router->post('/properties/{property}/meals/{meal}', [\Premisely\Modules\Meals\Controllers\MealController::class, 'update'], $propertyCsrf);
 $router->post('/properties/{property}/meals/{meal}/delete', [\Premisely\Modules\Meals\Controllers\MealController::class, 'destroy'], $propertyCsrf);
+
+// Weekly fixed menu
+$router->get('/properties/{property}/weekly-menu', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'index'], $property);
+$router->get('/properties/{property}/weekly-menu/pdf', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'pdf'], $property);
+$router->post('/properties/{property}/weekly-menu', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'store'], $propertyCsrf);
+$router->post('/properties/{property}/weekly-menu/rules', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'storeRule'], $propertyCsrf);
+$router->post('/properties/{property}/weekly-menu/rules/{rule}/delete', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'destroyRule'], $propertyCsrf);
+$router->post('/properties/{property}/weekly-menu/categories', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'storeCategory'], $propertyCsrf);
+$router->post('/properties/{property}/weekly-menu/categories/{category}', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'updateCategory'], $propertyCsrf);
+$router->post('/properties/{property}/weekly-menu/categories/{category}/delete', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'destroyCategory'], $propertyCsrf);
+$router->post('/properties/{property}/weekly-menu/ingredients', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'storeIngredient'], $propertyCsrf);
+$router->post('/properties/{property}/weekly-menu/ingredients/{ingredient}/delete', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'destroyIngredient'], $propertyCsrf);
+$router->post('/properties/{property}/weekly-menu/snacks', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'storeSnack'], $propertyCsrf);
+$router->post('/properties/{property}/weekly-menu/snacks/{snack}/delete', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'destroySnack'], $propertyCsrf);
+$router->post('/properties/{property}/weekly-menu/{item}/delete', [\Premisely\Modules\Meals\Controllers\WeeklyMenuController::class, 'destroy'], $propertyCsrf);
 
 // V1.5 — Clothing
 $router->get('/properties/{property}/clothing', [\Premisely\Modules\Clothing\Controllers\ClothingController::class, 'index'], $property);

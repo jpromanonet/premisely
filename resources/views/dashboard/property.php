@@ -63,8 +63,8 @@ $currentMonth = date('Y-m');
         <strong><?= (int) $todo === 0 ? 'Nada pendiente' : (int) $todo ?></strong>
         <p><?= (int) $todo === 0 ? 'El día está libre de tareas.' : 'Tareas y reparaciones que siguen en el día.' ?></p>
     </a>
-    <a class="today-card" href="<?= e($dayUrl) ?>">
-        <span>Comidas</span>
+    <a class="today-card" href="<?= e(url('/properties/' . $pid . '/weekly-menu')) ?>">
+        <span>Menú de hoy</span>
         <ul class="meal-dots">
             <?php foreach ($slots as $slot => $label): ?>
                 <li class="<?= in_array($slot, $mealsFilled, true) ? 'is-on meal-card--' . e($slot) : '' ?>"><?= e($label) ?></li>

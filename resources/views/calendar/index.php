@@ -15,7 +15,6 @@
 /** @var list<array<string,mixed>> $weekSpend */
 /** @var float $weekSpendTotal */
 /** @var list<array<string,mixed>> $habits */
-/** @var list<array<string,mixed>> $meals */
 /** @var list<array<string,mixed>> $repairs */
 /** @var list<array<string,mixed>> $notes */
 /** @var list<array<string,mixed>> $spaces */
@@ -35,16 +34,6 @@ $weekdays = [1 => 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado
 $selected = new DateTimeImmutable($day);
 $heading = ucfirst($weekdays[(int) $selected->format('N')]) . ' ' . $selected->format('j') . ' de ' . $months[(int) $selected->format('n')];
 $monthLabel = ucfirst($months[(int) substr($month, 5, 2)]) . ' ' . substr($month, 0, 4);
-$slots = [
-    'desayuno' => 'Desayuno',
-    'almuerzo' => 'Almuerzo',
-    'merienda' => 'Merienda',
-    'cena' => 'Cena',
-];
-$mealsBySlot = [];
-foreach ($meals as $meal) {
-    $mealsBySlot[(string) $meal['slot']][] = $meal;
-}
 $categories = [
     'general' => 'Casa',
     'cleaning' => 'Limpieza',
@@ -103,49 +92,6 @@ $priorities = ['low' => 'Baja', 'normal' => 'Normal', 'high' => 'Alta', 'urgent'
     </aside>
 
     <div class="day-main">
-        <h2 class="section-label section-label--meals">
-            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 3v7a2 2 0 0 0 2 2h1v9"/>
-                <path d="M7 3v7"/>
-                <path d="M10 3v7"/>
-                <path d="M17 3v18"/>
-                <path d="M17 8h2a2 2 0 0 0 0-4h-2"/>
-            </svg>
-            Comidas
-        </h2>
-        <div class="meal-row">
-            <?php foreach ($slots as $slot => $label): ?>
-                <article class="meal-card meal-card--<?= e($slot) ?>">
-                    <header><?= e($label) ?></header>
-                    <?php foreach ($mealsBySlot[$slot] ?? [] as $meal): ?>
-                        <div class="meal-item">
-                            <strong><?= e((string) $meal['title']) ?></strong>
-                            <?php if (!empty($canEdit)): ?>
-                                <form method="post" action="<?= e(url('/properties/' . $pid . '/meals/' . $meal['public_id'] . '/delete')) ?>">
-                                    <?= csrf_field() ?>
-                                    <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                                    <button type="submit" title="Quitar">×</button>
-                                </form>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
-                    <?php if (!empty($canEdit)): ?>
-                        <form class="meal-add" method="post" action="<?= e(url('/properties/' . $pid . '/meals')) ?>">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="meal_date" value="<?= e($day) ?>">
-                            <input type="hidden" name="slot" value="<?= e($slot) ?>">
-                            <input type="hidden" name="week_start" value="<?= e($day) ?>">
-                            <input type="hidden" name="redirect" value="<?= e($back) ?>">
-                            <input name="title" placeholder="Agregar" required>
-                            <button type="submit">+</button>
-                        </form>
-                    <?php elseif (($mealsBySlot[$slot] ?? []) === []): ?>
-                        <p class="muted">Sin definir</p>
-                    <?php endif; ?>
-                </article>
-            <?php endforeach; ?>
-        </div>
-
         <section class="day-cut task-cut">
         <div class="section-head">
             <h2 class="section-label">Tareas pendientes</h2>

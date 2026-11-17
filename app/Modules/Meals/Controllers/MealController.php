@@ -15,11 +15,7 @@ final class MealController extends Controller
 {
     public function index(Request $request, array $params): never
     {
-        $day = (string) $request->query('week', '');
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
-            $day = date('Y-m-d');
-        }
-        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/calendar?day=' . $day);
+        $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/weekly-menu');
     }
 
     public function create(Request $request, array $params): never
