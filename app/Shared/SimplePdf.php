@@ -144,7 +144,9 @@ final class SimplePdf
             }
         };
 
-        foreach ($this->blocks as $block) {
+        $blockCount = count($this->blocks);
+        for ($bi = 0; $bi < $blockCount; $bi++) {
+            $block = $this->blocks[$bi];
             $type = (string) $block['type'];
 
             if ($type === 'banner') {
@@ -189,7 +191,8 @@ final class SimplePdf
             }
 
             if ($type === 'section') {
-                $ensure(40);
+                // Keep section header with at least the next content block.
+                $ensure(36 + self::keepHeight($this->blocks, $bi + 1, 1));
                 $color = $block['color'];
                 $tint = self::tint($color, 0.88);
                 $ops[] = self::roundish($marginX, $y - 28, $contentW, 28, $tint);
@@ -216,8 +219,9 @@ final class SimplePdf
 
             if ($type === 'divider') {
                 $label = trim((string) ($block['label'] ?? ''));
-                $need = $label !== '' ? 42.0 : 28.0;
-                $ensure($need);
+                $own = $label !== '' ? 42.0 : 28.0;
+                // Don't leave a lone divider/title at the bottom of a page.
+                $ensure($own + self::keepHeight($this->blocks, $bi + 1, 2));
                 $y -= 10;
                 $ops[] = self::rect($marginX, $y - 1.5, $contentW, 1.5, [0.78, 0.80, 0.83], true);
                 $y -= 10;
@@ -298,6 +302,41 @@ final class SimplePdf
         }
 
         return $pages;
+    }
+
+    /**
+     * Estimate how much vertical space to reserve so headings stay with following content.
+     *
+     * @param list<array<string, mixed>> $blocks
+     */
+    private static function keepHeight(array $blocks, int $from, int $count): float
+    {
+        $total = 0.0;
+        $seen = 0;
+        $limit = count($blocks);
+        for ($i = $from; $i < $limit && $seen < $count; $i++) {
+            $type = (string) ($blocks[$i]['type'] ?? '');
+            if ($type === 'footer') {
+                break;
+            }
+            $total += self::estimateHeight($blocks[$i]);
+            $seen++;
+        }
+        return $total;
+    }
+
+    /** @param array<string, mixed> $block */
+    private static function estimateHeight(array $block): float
+    {
+        return match ((string) ($block['type'] ?? '')) {
+            'section' => 36.0,
+            'divider' => trim((string) ($block['label'] ?? '')) !== '' ? 42.0 : 28.0,
+            'empty' => 28.0,
+            'total' => 32.0,
+            'item' => 48.0,
+            'metrics' => 68.0,
+            default => 40.0,
+        };
     }
 
     /** @param array{0:float,1:float,2:float} $rgb */

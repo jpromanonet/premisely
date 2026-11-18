@@ -35,16 +35,30 @@ final class Response
     /** Binary file download with a stable filename (avoids browser .tmp saves). */
     public static function download(string $binary, string $filename, string $contentType): never
     {
-        $safe = preg_replace('/[^A-Za-z0-9._-]+/', '-', $filename) ?: 'download.bin';
-        (new self($binary, 200, [
-            'Content-Type' => $contentType,
-            'Content-Disposition' => 'attachment; filename="' . $safe . '"; filename*=UTF-8\'\'' . rawurlencode($filename),
-            'Content-Length' => (string) strlen($binary),
-            'Content-Transfer-Encoding' => 'binary',
-            'Cache-Control' => 'no-store, no-cache, must-revalidate',
-            'Pragma' => 'no-cache',
-            'X-Content-Type-Options' => 'nosniff',
-        ]))->send();
+        $safe = preg_replace('/[^A-Za-z0-9._-]+/', '_', $filename) ?: 'download.bin';
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        if (function_exists('ini_set')) {
+            @ini_set('zlib.output_compression', '0');
+        }
+
+        // Send headers directly: a single ASCII filename avoids Edge/Chrome saving as .tmp.
+        http_response_code(200);
+        header_remove('Content-Encoding');
+        header_remove('Transfer-Encoding');
+        header('Content-Type: ' . $contentType, true);
+        header('Content-Disposition: attachment; filename="' . $safe . '"', true);
+        header('Content-Length: ' . (string) strlen($binary), true);
+        header('Content-Transfer-Encoding: binary', true);
+        header('Cache-Control: private, no-transform, no-store, must-revalidate', true);
+        header('Pragma: public', true);
+        header('Expires: 0', true);
+        header('X-Content-Type-Options: nosniff', true);
+
+        echo $binary;
+        exit;
     }
 
     public function send(): never

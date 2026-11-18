@@ -154,7 +154,10 @@ final class WeeklyMenuController extends Controller
         $pdf->divider('Colaciones, snacks, ingredientes y reglas');
 
         foreach (self::snackGroups() as $group) {
-            $pdf->section($group['label'] . ' permitidos', $snackAccent);
+            $sectionTitle = $group['label'] === 'Colaciones'
+                ? 'Colaciones permitidas'
+                : $group['label'] . ' permitidos';
+            $pdf->section($sectionTitle, $snackAccent);
             $count = 0;
             foreach ($group['slots'] as $slot) {
                 foreach ($data['snacksBySlot'][$slot] ?? [] as $item) {
@@ -200,7 +203,7 @@ final class WeeklyMenuController extends Controller
         }
 
         $pdf->footer('Premisely · Menú semanal · ' . (string) ($property['name'] ?? ''));
-        Response::download($pdf->render(), 'menu-semanal.pdf', 'application/pdf');
+        Response::download($pdf->render(), 'menu_semanal.pdf', 'application/pdf');
     }
 
     public function store(Request $request, array $params): never
