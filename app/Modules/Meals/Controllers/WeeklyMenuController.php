@@ -71,6 +71,32 @@ final class WeeklyMenuController extends Controller
         return ['rose', 'sky', 'lime', 'apricot', 'violet', 'teal', 'mustard', 'coral', 'mint', 'indigo'];
     }
 
+    /**
+     * Fixed Friday treats — not editable.
+     *
+     * @return list<array{title:string, tone:string, color:array{0:float,1:float,2:float}}>
+     */
+    public static function fridayPermitted(): array
+    {
+        return [
+            [
+                'title' => 'Picada (salame, queso, twistos, papitas, aceitunas)',
+                'tone' => 'coral',
+                'color' => [0.847, 0.533, 0.408],
+            ],
+            [
+                'title' => 'Vino tinto',
+                'tone' => 'violet',
+                'color' => [0.647, 0.486, 0.820],
+            ],
+            [
+                'title' => '1 Kg de helado',
+                'tone' => 'sky',
+                'color' => [0.357, 0.655, 0.812],
+            ],
+        ];
+    }
+
     public function index(Request $request, array $params): never
     {
         $this->view('weekly_menu/index', array_merge($this->buildMenuData(), [
@@ -117,6 +143,12 @@ final class WeeklyMenuController extends Controller
             if (!$hasAny) {
                 $pdf->empty('Sin comidas cargadas.');
             }
+        }
+
+        $pdf->divider('Permitido semanal de Viernes');
+        $pdf->section('Permitido semanal de Viernes', [0.702, 0.227, 0.227], '3');
+        foreach (self::fridayPermitted() as $item) {
+            $pdf->item((string) $item['title'], '', false, $item['color']);
         }
 
         $pdf->divider('Colaciones, snacks, ingredientes y reglas');
@@ -553,6 +585,7 @@ final class WeeklyMenuController extends Controller
             'menuRules' => $menuRules,
             'mealSlots' => self::mealSlots(),
             'snackGroups' => self::snackGroups(),
+            'fridayPermitted' => self::fridayPermitted(),
             'weekdays' => self::weekdays(),
         ];
     }

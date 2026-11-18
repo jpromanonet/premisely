@@ -7,6 +7,7 @@
 /** @var list<array<string,mixed>> $uncategorizedIngredients */
 /** @var array<string, string> $mealSlots */
 /** @var array<string, array{label:string, slots:list<string>}> $snackGroups */
+/** @var list<array{title:string, tone:string}> $fridayPermitted */
 /** @var array<int, string> $weekdays */
 /** @var list<array<string,mixed>> $menuRules */
 /** @var bool $canEdit */
@@ -22,6 +23,11 @@ $slots = $mealSlots ?? ['desayuno' => 'Desayuno', 'almuerzo' => 'Almuerzo', 'mer
 $snackGroups = $snackGroups ?? [
     'colaciones' => ['label' => 'Colaciones', 'slots' => ['colacion_1', 'colacion_2', 'colacion_3']],
     'snacks' => ['label' => 'Snacks', 'slots' => ['snack_1', 'snack_2', 'snack_3']],
+];
+$fridayPermitted = $fridayPermitted ?? [
+    ['title' => 'Picada (salame, queso, twistos, papitas, aceitunas)', 'tone' => 'coral'],
+    ['title' => 'Vino tinto', 'tone' => 'violet'],
+    ['title' => '1 Kg de helado', 'tone' => 'sky'],
 ];
 $snackTone = [
     'colacion_1' => 'rose',
@@ -84,6 +90,18 @@ foreach ($ingredientsByCategory as $group) {
         </section>
     <?php endforeach; ?>
 </div>
+
+<hr class="weekly-menu-divider">
+<section class="weekly-friday" id="viernes">
+    <h2 class="weekly-snacks__title">Permitido semanal de Viernes</h2>
+    <div class="weekly-snacks-grid">
+        <?php foreach ($fridayPermitted as $item): ?>
+            <article class="meal-card meal-card--fixed meal-card--snack-<?= e((string) $item['tone']) ?>">
+                <strong><?= e((string) $item['title']) ?></strong>
+            </article>
+        <?php endforeach; ?>
+    </div>
+</section>
 
 <hr class="weekly-menu-divider">
 <section class="weekly-snacks" id="colaciones">
