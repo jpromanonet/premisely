@@ -489,6 +489,16 @@ td.row-actions { vertical-align: top; text-align: right; white-space: nowrap; pa
 .meal-card--snack-violet { background: #EFE3FF; border-color: #A57CD1; }
 .meal-card--snack-teal { background: #D5F3EF; border-color: #4FA89F; }
 .meal-card--snack-coral { background: #FFE0D4; border-color: #D88868; }
+.weekly-snacks-grid .meal-card {
+  min-height: 132px;
+  justify-content: center;
+}
+.weekly-snacks-grid .meal-item strong {
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
 .weekly-friday { margin: 0 0 8px; }
 .meal-card--fixed {
   min-height: 88px;

@@ -124,7 +124,7 @@ foreach ($ingredientsByCategory as $group) {
                                 <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
-                        <?php if (!empty($canEdit)): ?>
+                        <?php if (!empty($canEdit) && ($snacksBySlot[$slot] ?? []) === []): ?>
                             <form class="meal-add" method="post" action="<?= e(url('/properties/' . $pid . '/weekly-menu/snacks')) ?>">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="slot" value="<?= e($slot) ?>">

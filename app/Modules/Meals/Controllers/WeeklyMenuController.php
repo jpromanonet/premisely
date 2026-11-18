@@ -267,12 +267,21 @@ final class WeeklyMenuController extends Controller
             flash('error', 'Completá la colación o snack.');
             $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/weekly-menu#colaciones');
         }
+        $pid = PropertyContext::propertyId();
+        $exists = (int) Connection::fetchColumn(
+            'SELECT COUNT(*) FROM weekly_menu_snacks WHERE property_id = :p AND slot = :slot',
+            ['p' => $pid, 'slot' => $slot]
+        );
+        if ($exists > 0) {
+            flash('error', 'Ya hay un ítem en esa card. Borrálo para agregar otro.');
+            $this->redirect('/properties/' . PropertyContext::property()['public_id'] . '/weekly-menu#colaciones');
+        }
         Connection::query(
             'INSERT INTO weekly_menu_snacks (public_id, property_id, slot, title, created_at)
              VALUES (:pid, :prop, :slot, :title, :created_at)',
             [
                 'pid' => ulid(),
-                'prop' => PropertyContext::propertyId(),
+                'prop' => $pid,
                 'slot' => $slot,
                 'title' => $title,
                 'created_at' => date('Y-m-d H:i:s'),
